@@ -25,8 +25,14 @@ Billing.
    ```bash
    cp .env.example .env.local
    ```
-3. Set up the database: open the Supabase SQL Editor and run `supabase/schema.sql`.
-4. Run the dev server:
+3. Also add `SUPABASE_SERVICE_ROLE_KEY` (the **secret** key, same API page —
+   never the publishable/anon one) — needed by `/api/admin/*` routes that
+   create client/staff accounts. **Never** prefix this one with
+   `NEXT_PUBLIC_`; it must stay server-only.
+4. Set up the database: open the Supabase SQL Editor and run, in order:
+   `supabase/schema.sql`, then `supabase/migration_002_requirements_policy.sql`,
+   then `supabase/migration_003_owner_profile.sql`.
+5. Run the dev server:
    ```bash
    npm run dev
    ```

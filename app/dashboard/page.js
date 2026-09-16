@@ -41,6 +41,12 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-3">
           <a
+            href="/dashboard/admin/clients"
+            className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
+          >
+            Clients
+          </a>
+          <a
             href="/dashboard/requirements"
             className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
           >
