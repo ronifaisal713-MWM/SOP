@@ -1,0 +1,26 @@
+{
+  "name": "mwm-agency-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Macarthur Web & Marketing Agency - Agency Operating System (Client Portal, Project & Task Management, Chat, Approvals, Billing)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "@supabase/ssr": "^0.5.1",
+    "next": "14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.35"
+  }
+}
