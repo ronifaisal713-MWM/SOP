@@ -2,7 +2,7 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center">
       <h1 className="text-3xl font-bold text-brand mb-2">
-        Macarthur Web &amp; Marketing Agency
+        MWM Agency
       </h1>
       <p className="text-slate-500 mb-8">Agency Operating System — starter scaffold</p>
       <div className="flex gap-4">
