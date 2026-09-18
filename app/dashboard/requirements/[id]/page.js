@@ -150,10 +150,10 @@ export default function RequirementDetailPage() {
                   ✓ Converted to a task (status: {task.status})
                 </p>
                 <a
-                  href="/dashboard/tasks"
+                  href={`/dashboard/tasks/${task.id}`}
                   className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
                 >
-                  View Kanban Board
+                  Open Task &amp; Chat
                 </a>
               </div>
             ) : (

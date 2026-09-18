@@ -98,6 +98,12 @@ export default function TasksKanbanPage() {
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                       </p>
+                      <a
+                        href={`/dashboard/tasks/${t.id}`}
+                        className="text-xs text-brand hover:underline block mb-2"
+                      >
+                        Open · Chat
+                      </a>
                       <select
                         value={t.status}
                         onChange={(e) => moveTask(t.id, e.target.value)}
