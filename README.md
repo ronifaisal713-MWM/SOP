@@ -31,7 +31,9 @@ Billing.
    `NEXT_PUBLIC_`; it must stay server-only.
 4. Set up the database: open the Supabase SQL Editor and run, in order:
    `supabase/schema.sql`, then `supabase/migration_002_requirements_policy.sql`,
-   then `supabase/migration_003_owner_profile.sql`.
+   then `supabase/migration_003_owner_profile.sql`, then
+   `supabase/migration_004_client_scoped_requirements.sql`, then
+   `supabase/migration_005_tasks_policy.sql`.
 5. Run the dev server:
    ```bash
    npm run dev

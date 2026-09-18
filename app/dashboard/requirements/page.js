@@ -31,7 +31,7 @@ export default function RequirementsListPage() {
 
     supabase
       .from("requirements")
-      .select("*")
+      .select("*, clients(company_name)")
       .order("created_at", { ascending: false })
       .then(({ data, error: fetchError }) => {
         if (fetchError) {
@@ -80,6 +80,7 @@ export default function RequirementsListPage() {
               <thead className="bg-slate-100 text-slate-500 text-left">
                 <tr>
                   <th className="px-4 py-3 font-medium">Title</th>
+                  <th className="px-4 py-3 font-medium">Client</th>
                   <th className="px-4 py-3 font-medium">Category</th>
                   <th className="px-4 py-3 font-medium">Priority</th>
                   <th className="px-4 py-3 font-medium">Deadline</th>
@@ -88,8 +89,13 @@ export default function RequirementsListPage() {
               </thead>
               <tbody>
                 {requirements.map((r) => (
-                  <tr key={r.id} className="border-t border-slate-100">
+                  <tr
+                    key={r.id}
+                    onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
+                    className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+                  >
                     <td className="px-4 py-3 font-medium text-slate-800">{r.title}</td>
+                    <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "-"}</td>
                     <td className="px-4 py-3 text-slate-500">{r.category || "-"}</td>
                     <td className="px-4 py-3">
                       {PRIORITY_ICON[r.priority] || ""} {r.priority}

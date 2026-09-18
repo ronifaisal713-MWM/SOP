@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -23,9 +23,14 @@ const PRIORITIES = [
   { value: "low", label: "🟢 Low" },
 ];
 
+const STAFF_ROLES = ["super_admin", "admin", "project_manager", "team_lead", "employee"];
+
 export default function NewRequirementPage() {
   const { user, checked } = useRequireAuth();
   const router = useRouter();
+
+  const [roleInfo, setRoleInfo] = useState({ loading: true, role: null, clientId: null });
+  const [clients, setClients] = useState([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -34,9 +39,44 @@ export default function NewRequirementPage() {
     priority: "normal",
     deadline: "",
     description: "",
+    clientId: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Figure out whether the signed-in user is staff (picks a client from a
+  // list) or a client user (their own client_id is used automatically).
+  useEffect(() => {
+    if (!checked || !user) return;
+
+    async function loadRoleInfo() {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      const role = profile?.role || null;
+
+      if (role && STAFF_ROLES.includes(role)) {
+        const { data: clientList } = await supabase
+          .from("clients")
+          .select("id, company_name")
+          .order("company_name");
+        setClients(clientList || []);
+        setRoleInfo({ loading: false, role, clientId: null });
+      } else {
+        const { data: clientUser } = await supabase
+          .from("client_users")
+          .select("client_id")
+          .eq("id", user.id)
+          .maybeSingle();
+        setRoleInfo({ loading: false, role, clientId: clientUser?.client_id || null });
+      }
+    }
+
+    loadRoleInfo();
+  }, [checked, user]);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -45,6 +85,15 @@ export default function NewRequirementPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    const isStaff = roleInfo.role && STAFF_ROLES.includes(roleInfo.role);
+    const clientId = isStaff ? form.clientId : roleInfo.clientId;
+
+    if (isStaff && !clientId) {
+      setError("দয়া করে কোন Client-এর জন্য এই requirement, তা সিলেক্ট করুন।");
+      return;
+    }
+
     setSubmitting(true);
 
     const { error: insertError } = await supabase.from("requirements").insert({
@@ -55,6 +104,7 @@ export default function NewRequirementPage() {
       deadline: form.deadline || null,
       description: form.description || null,
       created_by: user?.id,
+      client_id: clientId,
       status: "new",
     });
 
@@ -68,9 +118,11 @@ export default function NewRequirementPage() {
     router.push("/dashboard/requirements");
   }
 
-  if (!checked) {
+  if (!checked || roleInfo.loading) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
   }
+
+  const isStaff = roleInfo.role && STAFF_ROLES.includes(roleInfo.role);
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
@@ -86,6 +138,31 @@ export default function NewRequirementPage() {
           onSubmit={handleSubmit}
           className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4"
         >
+          {isStaff && (
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Client *</label>
+              <select
+                required
+                value={form.clientId}
+                onChange={(e) => update("clientId", e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="">-- Client সিলেক্ট করুন --</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.company_name}
+                  </option>
+                ))}
+              </select>
+              {clients.length === 0 && (
+                <p className="text-xs text-slate-400 mt-1">
+                  এখনো কোনো client যোগ করা হয়নি — আগে Dashboard → Clients থেকে একটা client তৈরি
+                  করুন।
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
               Requirement Title *
