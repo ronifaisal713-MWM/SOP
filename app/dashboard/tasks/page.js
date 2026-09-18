@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import ChatWidget from "@/components/ChatWidget";
+import TaskChat from "@/components/TaskChat";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -40,17 +42,18 @@ function Avatar({ name }) {
 }
 
 export default function TasksKanbanPage() {
-  const { checked, allowed } = useRequireRole(ALL_STAFF_ROLES);
+  const { checked, allowed, user, role } = useRequireRole(ALL_STAFF_ROLES);
   const [tasks, setTasks] = useState([]);
   const [profileMap, setProfileMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [openChatTask, setOpenChatTask] = useState(null);
 
   useEffect(() => {
     if (!checked || !allowed) return;
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked]);
+  }, [checked, allowed]);
 
   async function loadTasks() {
     setLoading(true);
@@ -63,7 +66,6 @@ export default function TasksKanbanPage() {
     const taskList = data || [];
     setTasks(taskList);
 
-    // Look up display names for whoever's assigned, in one batch query.
     const assigneeIds = [...new Set(taskList.map((t) => t.assigned_to).filter(Boolean))];
     if (assigneeIds.length > 0) {
       const { data: profiles } = await supabase
@@ -79,7 +81,6 @@ export default function TasksKanbanPage() {
   }
 
   async function moveTask(taskId, newStatus) {
-    // Optimistic update so the board feels instant.
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
 
     const { error: updateError } = await supabase
@@ -89,7 +90,7 @@ export default function TasksKanbanPage() {
 
     if (updateError) {
       setError(updateError.message);
-      loadTasks(); // revert to real state on failure
+      loadTasks();
     }
   }
 
@@ -149,12 +150,20 @@ export default function TasksKanbanPage() {
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                       </p>
-                      <a
-                        href={`/dashboard/tasks/${t.id}`}
-                        className="text-xs text-brand hover:underline block mb-2"
-                      >
-                        Open · Chat
-                      </a>
+                      <div className="flex gap-3 mb-2">
+                        <button
+                          onClick={() => setOpenChatTask(t)}
+                          className="text-xs text-brand hover:underline"
+                        >
+                          💬 Chat
+                        </button>
+                        <a
+                          href={`/dashboard/tasks/${t.id}`}
+                          className="text-xs text-slate-400 hover:underline"
+                        >
+                          Details
+                        </a>
+                      </div>
                       <select
                         value={t.status}
                         onChange={(e) => moveTask(t.id, e.target.value)}
@@ -179,6 +188,17 @@ export default function TasksKanbanPage() {
             );
           })}
         </div>
+      )}
+
+      {openChatTask && (
+        <ChatWidget
+          title={`💬 ${openChatTask.title}`}
+          open={true}
+          onToggle={() => setOpenChatTask(null)}
+          onClose={() => setOpenChatTask(null)}
+        >
+          <TaskChat taskId={openChatTask.id} currentUser={user} isStaff={true} />
+        </ChatWidget>
       )}
     </main>
   );

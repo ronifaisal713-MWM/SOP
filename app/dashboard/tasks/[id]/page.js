@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import TaskChat from "@/components/TaskChat";
 
-const STAFF_ROLES = ["super_admin", "admin", "project_manager", "team_lead", "employee"];
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
+const STATUS_OPTIONS = [
+  "incoming",
+  "processing",
+  "internal_review",
+  "outgoing",
+  "client_review",
+  "revision",
+  "approved",
+  "done",
+];
 
 export default function TaskDetailPage() {
   const { user, checked } = useRequireAuth();
@@ -17,15 +28,8 @@ export default function TaskDetailPage() {
   const [isStaff, setIsStaff] = useState(false);
   const [team, setTeam] = useState([]);
   const [assigneeName, setAssigneeName] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [body, setBody] = useState("");
-  const [visibility, setVisibility] = useState("client");
-  const [sending, setSending] = useState(false);
-
-  const bottomRef = useRef(null);
 
   async function loadData() {
     setLoading(true);
@@ -35,9 +39,8 @@ export default function TaskDetailPage() {
       .select("role")
       .eq("id", user.id)
       .single();
-    const staff = !!profile?.role && STAFF_ROLES.includes(profile.role);
+    const staff = !!profile?.role && ALL_STAFF_ROLES.includes(profile.role);
     setIsStaff(staff);
-    setVisibility(staff ? "internal" : "client");
 
     const { data: taskData, error: taskError } = await supabase
       .from("tasks")
@@ -56,7 +59,7 @@ export default function TaskDetailPage() {
       const { data: teamData } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("role", STAFF_ROLES);
+        .in("role", ALL_STAFF_ROLES);
       setTeam(teamData || []);
     }
 
@@ -71,62 +74,14 @@ export default function TaskDetailPage() {
       setAssigneeName(null);
     }
 
-    const { data: messageData, error: messageError } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("task_id", id)
-      .order("created_at", { ascending: true });
-
-    if (messageError) setError(messageError.message);
-    setMessages(messageData || []);
     setLoading(false);
   }
 
   useEffect(() => {
     if (!checked || !user || !id) return;
     loadData();
-
-    // Live updates: new messages from either side appear without a refresh.
-    const channel = supabase
-      .channel(`task-${id}-messages`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `task_id=eq.${id}` },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user, id]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  async function handleSend(e) {
-    e.preventDefault();
-    if (!body.trim()) return;
-
-    setSending(true);
-    const { error: sendError } = await supabase.from("messages").insert({
-      task_id: id,
-      sender_id: user.id,
-      body: body.trim(),
-      visibility,
-    });
-    setSending(false);
-
-    if (sendError) {
-      setError(sendError.message);
-      return;
-    }
-    setBody("");
-  }
 
   async function moveStatus(newStatus) {
     setTask((t) => ({ ...t, status: newStatus }));
@@ -143,16 +98,16 @@ export default function TaskDetailPage() {
   }
 
   if (!checked || loading) {
-    return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
+    return <main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>;
   }
 
   if (error && !task) {
-    return <main className="min-h-screen flex items-center justify-center text-red-600 text-sm">{error}</main>;
+    return <main className="flex items-center justify-center py-20 text-red-600 text-sm">{error}</main>;
   }
 
   if (!task) {
     return (
-      <main className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
+      <main className="flex items-center justify-center py-20 text-slate-500 text-sm">
         Task not found.
       </main>
     );
@@ -219,16 +174,7 @@ export default function TaskDetailPage() {
                 onChange={(e) => moveStatus(e.target.value)}
                 className="border border-slate-200 rounded-md text-sm px-2 py-1 bg-slate-50"
               >
-                {[
-                  "incoming",
-                  "processing",
-                  "internal_review",
-                  "outgoing",
-                  "client_review",
-                  "revision",
-                  "approved",
-                  "done",
-                ].map((s) => (
+                {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
@@ -238,88 +184,14 @@ export default function TaskDetailPage() {
           )}
         </div>
 
-        {/* Chat thread */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4 flex flex-col h-[420px]">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4 h-[420px]">
           <div className="px-4 py-3 border-b border-slate-100">
             <h2 className="text-sm font-semibold text-slate-600">Chat</h2>
           </div>
-
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {messages.length === 0 && (
-              <p className="text-center text-xs text-slate-300 mt-8">No messages yet.</p>
-            )}
-
-            {messages.map((m) => {
-              const isMine = m.sender_id === user.id;
-              const isInternal = m.visibility === "internal";
-              return (
-                <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                      isInternal
-                        ? "bg-amber-50 border border-amber-200 text-amber-900"
-                        : isMine
-                        ? "bg-brand text-white"
-                        : "bg-slate-100 text-slate-800"
-                    }`}
-                  >
-                    {isStaff && (
-                      <p
-                        className={`text-[10px] font-medium mb-0.5 ${
-                          isInternal ? "text-amber-600" : isMine ? "text-white/70" : "text-slate-400"
-                        }`}
-                      >
-                        {isInternal ? "🟠 Internal Note" : "🔵 Client Message"}
-                      </p>
-                    )}
-                    <p className="whitespace-pre-wrap">{m.body}</p>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
+          <div className="h-[calc(100%-45px)]">
+            <TaskChat taskId={id} currentUser={user} isStaff={isStaff} />
           </div>
-
-          <form onSubmit={handleSend} className="border-t border-slate-100 p-3">
-            {isStaff && (
-              <div className="flex gap-3 mb-2 text-xs">
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    checked={visibility === "client"}
-                    onChange={() => setVisibility("client")}
-                  />
-                  🔵 Client Message
-                </label>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    checked={visibility === "internal"}
-                    onChange={() => setVisibility("internal")}
-                  />
-                  🟠 Internal Note
-                </label>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 border border-slate-300 rounded-md px-3 py-2 text-sm"
-              />
-              <button
-                type="submit"
-                disabled={sending || !body.trim()}
-                className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-50"
-              >
-                Send
-              </button>
-            </div>
-          </form>
         </div>
-
-        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       </div>
     </main>
   );

@@ -39,7 +39,7 @@ function linkify(text) {
  *   contacts    - [{ id, full_name }] of this client's contacts (used by
  *                 agency to pick who a personal thread is with)
  */
-export default function ClientChat({ clientId, currentUser, viewerRole, contacts = [] }) {
+export default function ClientChat({ clientId, currentUser, viewerRole, contacts = [], embedded = false }) {
   const category = categoryForRole(viewerRole);
   const isAgency = category === "agency";
   const isStaffOnly = category === "staff";
@@ -181,7 +181,13 @@ export default function ClientChat({ clientId, currentUser, viewerRole, contacts
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col h-[480px]">
+    <div
+      className={
+        embedded
+          ? "flex flex-col h-full"
+          : "bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col h-[480px]"
+      }
+    >
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-1">
           {availableTabs.map((t) => (

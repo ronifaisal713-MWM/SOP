@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
+import ChatWidget from "@/components/ChatWidget";
+import ClientChat from "@/components/ClientChat";
 
 const NAV_BY_CATEGORY = {
   agency: [
@@ -21,8 +23,8 @@ const NAV_BY_CATEGORY = {
   ],
   client: [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/my-tasks", label: "My Tasks" },
     { href: "/dashboard/requirements", label: "Requirements" },
-    { href: "/dashboard/messages", label: "Messages" },
   ],
 };
 
@@ -33,10 +35,13 @@ const NAV_BY_CATEGORY = {
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const [category, setCategory] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
+  const [clientId, setClientId] = useState(null);
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -48,22 +53,33 @@ export default function DashboardLayout({ children }) {
         return;
       }
 
-      const uid = sessionData.session.user.id;
+      const sessionUser = sessionData.session.user;
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", uid)
+        .eq("id", sessionUser.id)
         .single();
 
       if (!isMounted) return;
-      setUserId(uid);
-      setCategory(categoryForRole(profile?.role));
+      setUser(sessionUser);
+      setRole(profile?.role || null);
+      const cat = categoryForRole(profile?.role);
+      setCategory(cat);
       setChecked(true);
+
+      if (cat === "client") {
+        const { data: clientUser } = await supabase
+          .from("client_users")
+          .select("client_id")
+          .eq("id", sessionUser.id)
+          .maybeSingle();
+        if (isMounted) setClientId(clientUser?.client_id || null);
+      }
 
       const { data: notifs } = await supabase
         .from("notifications")
         .select("*")
-        .eq("user_id", uid)
+        .eq("user_id", sessionUser.id)
         .order("created_at", { ascending: false })
         .limit(15);
       if (isMounted) setNotifications(notifs || []);
@@ -82,13 +98,13 @@ export default function DashboardLayout({ children }) {
   }, [router]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!user) return;
 
     const channel = supabase
-      .channel(`notifications-${userId}`)
+      .channel(`notifications-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 15));
         }
@@ -96,7 +112,7 @@ export default function DashboardLayout({ children }) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [userId]);
+  }, [user]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -171,6 +187,19 @@ export default function DashboardLayout({ children }) {
         children
       ) : (
         <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
+      )}
+
+      {/* Floating chat -- clients reach the agency this way from any page,
+          instead of navigating to a separate Messages page. */}
+      {checked && category === "client" && clientId && (
+        <ChatWidget
+          title="💬 Messages"
+          open={chatOpen}
+          onToggle={() => setChatOpen((o) => !o)}
+          onClose={() => setChatOpen(false)}
+        >
+          <ClientChat clientId={clientId} currentUser={user} viewerRole={role} embedded />
+        </ChatWidget>
       )}
     </div>
   );

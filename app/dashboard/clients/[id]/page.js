@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ClientChat from "@/components/ClientChat";
+import ChatWidget from "@/components/ChatWidget";
 
 export default function ClientWorkspacePage() {
   const { user, checked } = useRequireAuth();
@@ -19,6 +20,7 @@ export default function ClientWorkspacePage() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (!checked || !user || !id) return;
@@ -111,34 +113,36 @@ export default function ClientWorkspacePage() {
           </a>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-600 mb-2">Requirements</h2>
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm divide-y divide-slate-100 max-h-[480px] overflow-y-auto">
-              {requirements.length === 0 && (
-                <p className="text-center text-xs text-slate-300 py-8">No requirements yet.</p>
-              )}
-              {requirements.map((r) => (
-                <a
-                  key={r.id}
-                  href={`/dashboard/requirements/${r.id}`}
-                  className="block px-4 py-3 hover:bg-slate-50 transition"
-                >
-                  <p className="text-sm font-medium text-slate-800">{r.title}</p>
-                  <p className="text-xs text-slate-400">
-                    {r.category || "-"} · {r.status}
-                  </p>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-sm font-semibold text-slate-600 mb-2">Chat</h2>
-            <ClientChat clientId={id} currentUser={user} viewerRole={role} contacts={contacts} />
+        <div>
+          <h2 className="text-sm font-semibold text-slate-600 mb-2">Requirements</h2>
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm divide-y divide-slate-100 max-h-[480px] overflow-y-auto">
+            {requirements.length === 0 && (
+              <p className="text-center text-xs text-slate-300 py-8">No requirements yet.</p>
+            )}
+            {requirements.map((r) => (
+              <a
+                key={r.id}
+                href={`/dashboard/requirements/${r.id}`}
+                className="block px-4 py-3 hover:bg-slate-50 transition"
+              >
+                <p className="text-sm font-medium text-slate-800">{r.title}</p>
+                <p className="text-xs text-slate-400">
+                  {r.category || "-"} · {r.status}
+                </p>
+              </a>
+            ))}
           </div>
         </div>
       </div>
+
+      <ChatWidget
+        title={`💬 ${client.company_name}`}
+        open={chatOpen}
+        onToggle={() => setChatOpen((o) => !o)}
+        onClose={() => setChatOpen(false)}
+      >
+        <ClientChat clientId={id} currentUser={user} viewerRole={role} contacts={contacts} embedded />
+      </ChatWidget>
     </main>
   );
 }

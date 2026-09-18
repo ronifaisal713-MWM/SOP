@@ -33,7 +33,11 @@ Billing.
    `supabase/schema.sql`, then `supabase/migration_002_requirements_policy.sql`,
    then `supabase/migration_003_owner_profile.sql`, then
    `supabase/migration_004_client_scoped_requirements.sql`, then
-   `supabase/migration_005_tasks_policy.sql`.
+   `supabase/migration_005_tasks_policy.sql`, then
+   `supabase/migration_006_messages_policy.sql`, then
+   `supabase/migration_007_multi_tenant.sql`, then
+   `supabase/migration_008_client_chat_and_notifications.sql`, then
+   `supabase/migration_009_client_task_approvals.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
