@@ -37,7 +37,8 @@ Billing.
    `supabase/migration_006_messages_policy.sql`, then
    `supabase/migration_007_multi_tenant.sql`, then
    `supabase/migration_008_client_chat_and_notifications.sql`, then
-   `supabase/migration_009_client_task_approvals.sql`.
+   `supabase/migration_009_client_task_approvals.sql`, then
+   `supabase/migration_010_assignment_scoping_and_notification_links.sql`.
 5. Run the dev server:
    ```bash
    npm run dev

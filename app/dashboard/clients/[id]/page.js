@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ClientChat from "@/components/ClientChat";
 import ChatWidget from "@/components/ChatWidget";
 
-export default function ClientWorkspacePage() {
+function ClientWorkspacePageInner() {
   const { user, checked } = useRequireAuth();
   const params = useParams();
   const { id } = params;
+  const searchParams = useSearchParams();
 
   const [role, setRole] = useState(null);
   const [allowed, setAllowed] = useState(false);
@@ -20,7 +21,7 @@ export default function ClientWorkspacePage() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(searchParams.get("openChat") === "1");
 
   useEffect(() => {
     if (!checked || !user || !id) return;
@@ -141,8 +142,26 @@ export default function ClientWorkspacePage() {
         onToggle={() => setChatOpen((o) => !o)}
         onClose={() => setChatOpen(false)}
       >
-        <ClientChat clientId={id} currentUser={user} viewerRole={role} contacts={contacts} embedded />
+        <ClientChat
+          clientId={id}
+          currentUser={user}
+          viewerRole={role}
+          contacts={contacts}
+          initialTab={searchParams.get("tab") || "public"}
+          initialContactId={searchParams.get("contact") || ""}
+          embedded
+        />
       </ChatWidget>
     </main>
+  );
+}
+
+export default function ClientWorkspacePage() {
+  return (
+    <Suspense
+      fallback={<main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>}
+    >
+      <ClientWorkspacePageInner />
+    </Suspense>
   );
 }

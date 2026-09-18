@@ -39,7 +39,15 @@ function linkify(text) {
  *   contacts    - [{ id, full_name }] of this client's contacts (used by
  *                 agency to pick who a personal thread is with)
  */
-export default function ClientChat({ clientId, currentUser, viewerRole, contacts = [], embedded = false }) {
+export default function ClientChat({
+  clientId,
+  currentUser,
+  viewerRole,
+  contacts = [],
+  embedded = false,
+  initialTab = "public",
+  initialContactId = "",
+}) {
   const category = categoryForRole(viewerRole);
   const isAgency = category === "agency";
   const isStaffOnly = category === "staff";
@@ -51,8 +59,8 @@ export default function ClientChat({ clientId, currentUser, viewerRole, contacts
     ? ["public", "internal"]
     : ["public", "personal"];
 
-  const [tab, setTab] = useState("public");
-  const [selectedContactId, setSelectedContactId] = useState(contacts[0]?.id || "");
+  const [tab, setTab] = useState(availableTabs.includes(initialTab) ? initialTab : "public");
+  const [selectedContactId, setSelectedContactId] = useState(initialContactId || contacts[0]?.id || "");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");

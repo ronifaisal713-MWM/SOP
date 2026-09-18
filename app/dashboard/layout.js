@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
@@ -32,8 +32,9 @@ const NAV_BY_CATEGORY = {
 // links appear on it -- is always the same no matter which page you're
 // on. It's also where the "does this URL even belong to my portal?" auth
 // check lives once, instead of being duplicated per page.
-export default function DashboardLayout({ children }) {
+function DashboardLayoutInner({ children }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [category, setCategory] = useState(null);
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -41,7 +42,7 @@ export default function DashboardLayout({ children }) {
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(searchParams.get("openChat") === "1");
 
   useEffect(() => {
     let isMounted = true;
@@ -165,10 +166,14 @@ export default function DashboardLayout({ children }) {
                   <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
                 )}
                 {notifications.map((n) => (
-                  <div key={n.id} className="px-3 py-2 border-b border-slate-100 last:border-0">
+                  <a
+                    key={n.id}
+                    href={n.link || "#"}
+                    className="block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
+                  >
                     <p className="text-xs font-medium text-slate-700">{n.title}</p>
                     {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
-                  </div>
+                  </a>
                 ))}
               </div>
             )}
@@ -198,9 +203,27 @@ export default function DashboardLayout({ children }) {
           onToggle={() => setChatOpen((o) => !o)}
           onClose={() => setChatOpen(false)}
         >
-          <ClientChat clientId={clientId} currentUser={user} viewerRole={role} embedded />
+          <ClientChat
+            clientId={clientId}
+            currentUser={user}
+            viewerRole={role}
+            initialTab={searchParams.get("tab") || "public"}
+            embedded
+          />
         </ChatWidget>
       )}
     </div>
+  );
+}
+
+// useSearchParams() (used above to support ?openChat=1 deep links from
+// notifications) requires a Suspense boundary during static generation.
+export default function DashboardLayout({ children }) {
+  return (
+    <Suspense
+      fallback={<div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>}
+    >
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </Suspense>
   );
 }
