@@ -43,9 +43,15 @@ export default function LoginPage() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-slate-300 rounded-md px-3 py-2 mb-6 text-sm"
+          className="w-full border border-slate-300 rounded-md px-3 py-2 mb-2 text-sm"
           placeholder="••••••••"
         />
+
+        <div className="text-right mb-4">
+          <a href="/forgot-password" className="text-xs text-brand hover:underline">
+            পাসওয়ার্ড ভুলে গেছেন?
+          </a>
+        </div>
 
         <button
           type="submit"
