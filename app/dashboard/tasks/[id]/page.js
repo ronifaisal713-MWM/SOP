@@ -15,6 +15,8 @@ export default function TaskDetailPage() {
 
   const [task, setTask] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
+  const [team, setTeam] = useState([]);
+  const [assigneeName, setAssigneeName] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,6 +51,25 @@ export default function TaskDetailPage() {
       return;
     }
     setTask(taskData);
+
+    if (staff) {
+      const { data: teamData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("role", STAFF_ROLES);
+      setTeam(teamData || []);
+    }
+
+    if (taskData.assigned_to) {
+      const { data: assignee } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", taskData.assigned_to)
+        .maybeSingle();
+      setAssigneeName(assignee?.full_name || null);
+    } else {
+      setAssigneeName(null);
+    }
 
     const { data: messageData, error: messageError } = await supabase
       .from("messages")
@@ -112,6 +133,15 @@ export default function TaskDetailPage() {
     await supabase.from("tasks").update({ status: newStatus }).eq("id", id);
   }
 
+  async function assignTask(newAssigneeId) {
+    setTask((t) => ({ ...t, assigned_to: newAssigneeId || null }));
+    setAssigneeName(team.find((m) => m.id === newAssigneeId)?.full_name || null);
+    await supabase
+      .from("tasks")
+      .update({ assigned_to: newAssigneeId || null })
+      .eq("id", id);
+  }
+
   if (!checked || loading) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
   }
@@ -151,6 +181,35 @@ export default function TaskDetailPage() {
           {task.description && (
             <p className="text-sm text-slate-700 mt-3 whitespace-pre-wrap">{task.description}</p>
           )}
+
+          <div className="mt-4 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+              {assigneeName
+                ? assigneeName
+                    .split(" ")
+                    .map((p) => p[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()
+                : "?"}
+            </div>
+            {isStaff ? (
+              <select
+                value={task.assigned_to || ""}
+                onChange={(e) => assignTask(e.target.value)}
+                className="border border-slate-200 rounded-md text-sm px-2 py-1 bg-slate-50"
+              >
+                <option value="">Unassigned</option>
+                {team.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.full_name || "Unnamed"}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-slate-600">{assigneeName || "Unassigned"}</p>
+            )}
+          </div>
 
           {isStaff && (
             <div className="mt-4">

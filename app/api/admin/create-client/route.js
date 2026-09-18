@@ -24,12 +24,15 @@ export async function POST(request) {
 
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, organization_id")
       .eq("id", userData.user.id)
       .single();
 
     if (!callerProfile || !["super_admin", "admin"].includes(callerProfile.role)) {
       return NextResponse.json({ error: "Not authorized to create client accounts" }, { status: 403 });
+    }
+    if (!callerProfile.organization_id) {
+      return NextResponse.json({ error: "Your account isn't linked to an agency" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -45,7 +48,7 @@ export async function POST(request) {
       );
     }
 
-    // 1. Create the client company record.
+    // 1. Create the client company record, scoped to the caller's agency.
     const { data: client, error: clientError } = await supabaseAdmin
       .from("clients")
       .insert({
@@ -53,6 +56,7 @@ export async function POST(request) {
         contact_person: contactPerson || null,
         email,
         phone: phone || null,
+        organization_id: callerProfile.organization_id,
       })
       .select()
       .single();

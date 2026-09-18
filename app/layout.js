@@ -1,9 +1,9 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "MWM Agency OS",
+  title: "Agency OS",
   description:
-    "Macarthur Web & Marketing Agency - Client Portal, Project & Task Management, Chat, Approvals, Billing",
+    "Client Portal, Project & Task Management, Chat, Approvals, and Billing -- one workspace per agency.",
 };
 
 export default function RootLayout({ children }) {

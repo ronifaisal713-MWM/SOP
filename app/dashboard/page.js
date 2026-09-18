@@ -4,17 +4,28 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 
+const STAFF_ROLES = ["super_admin", "admin", "project_manager", "team_lead", "employee"];
+
 export default function DashboardPage() {
   const { user, checked } = useRequireAuth();
   const [requirementCount, setRequirementCount] = useState(null);
+  const [isStaff, setIsStaff] = useState(false);
 
   useEffect(() => {
-    if (!checked) return;
+    if (!checked || !user) return;
+
     supabase
       .from("requirements")
       .select("*", { count: "exact", head: true })
       .then(({ count }) => setRequirementCount(count ?? 0));
-  }, [checked]);
+
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => setIsStaff(!!data?.role && STAFF_ROLES.includes(data.role)));
+  }, [checked, user]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -34,24 +45,34 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-brand">Dashboard</h1>
           {user?.email && <p className="text-sm text-slate-500">Signed in as {user.email}</p>}
         </div>
-        <div className="flex gap-3">
-          <a
-            href="/dashboard/admin/clients"
-            className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
-          >
-            Clients
-          </a>
-          <a
-            href="/dashboard/tasks"
-            className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
-          >
-            Task Board
-          </a>
+        <div className="flex gap-3 flex-wrap">
+          {isStaff && (
+            <>
+              <a
+                href="/dashboard/admin/clients"
+                className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
+              >
+                Clients
+              </a>
+              <a
+                href="/dashboard/admin/team"
+                className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
+              >
+                Team
+              </a>
+              <a
+                href="/dashboard/tasks"
+                className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
+              >
+                Task Board
+              </a>
+            </>
+          )}
           <a
             href="/dashboard/requirements"
             className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"

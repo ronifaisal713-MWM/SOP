@@ -17,9 +17,31 @@ const COLUMNS = [
 
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 
+function initials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function Avatar({ name }) {
+  return (
+    <div
+      title={name || "Unassigned"}
+      className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[9px] font-semibold flex-shrink-0"
+    >
+      {initials(name)}
+    </div>
+  );
+}
+
 export default function TasksKanbanPage() {
   const { checked } = useRequireAuth();
   const [tasks, setTasks] = useState([]);
+  const [profileMap, setProfileMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -37,7 +59,21 @@ export default function TasksKanbanPage() {
       .order("created_at", { ascending: true });
 
     if (fetchError) setError(fetchError.message);
-    setTasks(data || []);
+    const taskList = data || [];
+    setTasks(taskList);
+
+    // Look up display names for whoever's assigned, in one batch query.
+    const assigneeIds = [...new Set(taskList.map((t) => t.assigned_to).filter(Boolean))];
+    if (assigneeIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", assigneeIds);
+      const map = {};
+      (profiles || []).forEach((p) => (map[p.id] = p.full_name));
+      setProfileMap(map);
+    }
+
     setLoading(false);
   }
 
@@ -93,7 +129,13 @@ export default function TasksKanbanPage() {
                       key={t.id}
                       className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm text-sm"
                     >
-                      <p className="font-medium text-slate-800 mb-1">{t.title}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Avatar name={profileMap[t.assigned_to]} />
+                        <p className="font-medium text-slate-800 flex-1">{t.title}</p>
+                      </div>
+                      <p className="text-slate-400 text-xs mb-1">
+                        {profileMap[t.assigned_to] || "Unassigned"}
+                      </p>
                       <p className="text-slate-400 text-xs mb-2">
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}

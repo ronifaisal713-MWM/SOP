@@ -73,6 +73,7 @@ export default function ClientsListPage() {
                   <th className="px-4 py-3 font-medium">Contact</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Team</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +86,14 @@ export default function ClientsListPage() {
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                         {c.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={`/dashboard/admin/clients/${c.id}/assign`}
+                        className="text-brand text-xs hover:underline"
+                      >
+                        Assign Team
+                      </a>
                     </td>
                   </tr>
                 ))}
