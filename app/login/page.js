@@ -49,7 +49,7 @@ export default function LoginPage() {
 
         <div className="text-right mb-4">
           <a href="/forgot-password" className="text-xs text-brand hover:underline">
-            পাসওয়ার্ড ভুলে গেছেন?
+            Forgot password?
           </a>
         </div>
 

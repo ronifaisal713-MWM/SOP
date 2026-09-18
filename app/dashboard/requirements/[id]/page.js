@@ -93,7 +93,7 @@ export default function RequirementDetailPage() {
   if (!requirement) {
     return (
       <main className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
-        Requirement পাওয়া যায়নি।
+        Requirement not found.
       </main>
     );
   }
@@ -147,13 +147,13 @@ export default function RequirementDetailPage() {
             {task ? (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-green-700">
-                  ✓ এটা Task-এ convert হয়ে গেছে (status: {task.status})
+                  ✓ Converted to a task (status: {task.status})
                 </p>
                 <a
                   href="/dashboard/tasks"
                   className="px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
                 >
-                  Kanban Board দেখুন
+                  View Kanban Board
                 </a>
               </div>
             ) : (
@@ -162,7 +162,7 @@ export default function RequirementDetailPage() {
                 disabled={converting}
                 className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-60"
               >
-                {converting ? "তৈরি হচ্ছে..." : "Convert to Task"}
+                {converting ? "Converting..." : "Convert to Task"}
               </button>
             )}
           </div>

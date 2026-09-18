@@ -32,7 +32,7 @@ export default function ClientsListPage() {
   if (!allowed) {
     return (
       <main className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
-        এই পেজ শুধু Team-দের জন্য। আপনার অ্যাক্সেস নেই।
+        This page is for team members only. You don't have access.
       </main>
     );
   }
@@ -60,7 +60,7 @@ export default function ClientsListPage() {
 
         {!loading && !error && clients.length === 0 && (
           <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-slate-400 text-sm">
-            কোনো client এখনো যোগ করা হয়নি। উপরের "+ New Client" চেপে প্রথমটা যোগ করুন।
+            No clients yet. Click "+ New Client" above to add the first one.
           </div>
         )}
 

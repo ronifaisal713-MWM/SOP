@@ -31,17 +31,17 @@ export default function ForgotPasswordPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
       <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-slate-200">
-        <h1 className="text-xl font-semibold text-brand mb-2">পাসওয়ার্ড রিসেট করুন</h1>
+        <h1 className="text-xl font-semibold text-brand mb-2">Reset Password</h1>
 
         {sent ? (
           <p className="text-sm text-slate-600 mt-4">
-            <strong>{email}</strong>-এ একটা রিসেট লিংক পাঠানো হয়েছে। ইনবক্স (বা Spam ফোল্ডার) চেক
-            করুন এবং সেখান থেকে লিংকে ক্লিক করে নতুন পাসওয়ার্ড সেট করুন।
+            A reset link has been sent to <strong>{email}</strong>. Check your inbox (or Spam
+            folder) and click the link there to set a new password.
           </p>
         ) : (
           <form onSubmit={handleSubmit}>
             <p className="text-sm text-slate-500 mb-4">
-              আপনার account-এর ইমেইল দিন — সেখানে একটা পাসওয়ার্ড রিসেট লিংক পাঠানো হবে।
+              Enter your account email — a password reset link will be sent there.
             </p>
 
             <label className="block text-sm text-slate-600 mb-1">Email</label>
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
               disabled={submitting}
               className="w-full bg-brand text-white rounded-md py-2 font-medium hover:bg-brand-light transition disabled:opacity-60"
             >
-              {submitting ? "পাঠানো হচ্ছে..." : "রিসেট লিংক পাঠান"}
+              {submitting ? "Sending..." : "Send Reset Link"}
             </button>
 
             {message && <p className="text-sm text-red-600 mt-4">{message}</p>}
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
 
         <div className="mt-6 text-center">
           <a href="/login" className="text-xs text-slate-500 hover:underline">
-            ← Sign in পেজে ফিরে যান
+            ← Back to Sign In
           </a>
         </div>
       </div>

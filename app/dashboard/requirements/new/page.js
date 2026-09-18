@@ -90,7 +90,7 @@ export default function NewRequirementPage() {
     const clientId = isStaff ? form.clientId : roleInfo.clientId;
 
     if (isStaff && !clientId) {
-      setError("দয়া করে কোন Client-এর জন্য এই requirement, তা সিলেক্ট করুন।");
+      setError("Please select which Client this requirement is for.");
       return;
     }
 
@@ -147,7 +147,7 @@ export default function NewRequirementPage() {
                 onChange={(e) => update("clientId", e.target.value)}
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
               >
-                <option value="">-- Client সিলেক্ট করুন --</option>
+                <option value="">-- Select a Client --</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.company_name}
@@ -156,8 +156,7 @@ export default function NewRequirementPage() {
               </select>
               {clients.length === 0 && (
                 <p className="text-xs text-slate-400 mt-1">
-                  এখনো কোনো client যোগ করা হয়নি — আগে Dashboard → Clients থেকে একটা client তৈরি
-                  করুন।
+                  No clients yet — create one first from Dashboard → Clients.
                 </p>
               )}
             </div>

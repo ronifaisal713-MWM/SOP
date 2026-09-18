@@ -45,14 +45,14 @@ export default function NewClientPage() {
     setSubmitting(false);
 
     if (!res.ok) {
-      setError(result.error || "কিছু একটা ভুল হয়েছে");
+      setError(result.error || "Something went wrong");
       return;
     }
 
     setSuccess(
       form.mode === "invite"
-        ? `Client account তৈরি হয়েছে। ${form.email} — এই ইমেইলে একটা invite পাঠানো হয়েছে, সেখান থেকে client নিজে পাসওয়ার্ড সেট করবে।`
-        : `Client account তৈরি হয়েছে। এই credential client-কে দিন — Email: ${form.email}, Password: ${form.password}`
+        ? `Client account created. An invite has been sent to ${form.email} -- the client will set their own password from there.`
+        : `Client account created. Share these credentials with the client -- Email: ${form.email}, Password: ${form.password}`
     );
     setForm({ companyName: "", contactPerson: "", email: "", phone: "", mode: "invite", password: "" });
   }
@@ -64,7 +64,7 @@ export default function NewClientPage() {
   if (!allowed) {
     return (
       <main className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
-        এই পেজ শুধু Admin-দের জন্য। আপনার অ্যাক্সেস নেই।
+        This page is for Admins only. You don't have access.
       </main>
     );
   }
@@ -73,7 +73,7 @@ export default function NewClientPage() {
     <main className="min-h-screen bg-slate-50 px-6 py-10">
       <div className="max-w-xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-brand">নতুন Client যোগ করুন</h1>
+          <h1 className="text-2xl font-semibold text-brand">Add New Client</h1>
           <a href="/dashboard/admin/clients" className="text-sm text-slate-500 hover:underline">
             ← Client list
           </a>
@@ -126,7 +126,7 @@ export default function NewClientPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-2">
-              Account তৈরি করবেন কীভাবে?
+              How should the account be created?
             </label>
             <div className="flex flex-col gap-2 text-sm">
               <label className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function NewClientPage() {
                   checked={form.mode === "invite"}
                   onChange={() => update("mode", "invite")}
                 />
-                Email-এ invite পাঠান (client নিজে গিয়ে পাসওয়ার্ড সেট করবে)
+                Send an email invite (client sets their own password)
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -143,7 +143,7 @@ export default function NewClientPage() {
                   checked={form.mode === "password"}
                   onChange={() => update("mode", "password")}
                 />
-                আমি নিজে একটা পাসওয়ার্ড সেট করে দিই
+                I'll set a password myself
               </label>
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function NewClientPage() {
                 required={form.mode === "password"}
                 value={form.password}
                 onChange={(e) => update("password", e.target.value)}
-                placeholder="কমপক্ষে ৮ ক্যারেক্টার"
+                placeholder="At least 8 characters"
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
               />
             </div>
@@ -172,7 +172,7 @@ export default function NewClientPage() {
             disabled={submitting}
             className="w-full bg-brand text-white rounded-md py-2 font-medium hover:bg-brand-light transition disabled:opacity-60"
           >
-            {submitting ? "তৈরি হচ্ছে..." : "Client Account তৈরি করুন"}
+            {submitting ? "Creating..." : "Create Client Account"}
           </button>
         </form>
       </div>

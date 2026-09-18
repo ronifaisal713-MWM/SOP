@@ -35,11 +35,11 @@ export default function ResetPasswordPage() {
     setError("");
 
     if (password.length < 8) {
-      setError("পাসওয়ার্ড কমপক্ষে ৮ ক্যারেক্টার হতে হবে।");
+      setError("Password must be at least 8 characters.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("দুটো পাসওয়ার্ড মিলছে না।");
+      setError("Passwords do not match.");
       return;
     }
 
@@ -61,25 +61,25 @@ export default function ResetPasswordPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
       <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-slate-200">
-        <h1 className="text-xl font-semibold text-brand mb-4">নতুন পাসওয়ার্ড সেট করুন</h1>
+        <h1 className="text-xl font-semibold text-brand mb-4">Set New Password</h1>
 
         {!ready && !success && (
-          <p className="text-sm text-slate-400">লিংক যাচাই করা হচ্ছে...</p>
+          <p className="text-sm text-slate-400">Verifying link...</p>
         )}
 
         {ready && !success && (
           <form onSubmit={handleSubmit}>
-            <label className="block text-sm text-slate-600 mb-1">নতুন পাসওয়ার্ড</label>
+            <label className="block text-sm text-slate-600 mb-1">New Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-slate-300 rounded-md px-3 py-2 mb-4 text-sm"
-              placeholder="কমপক্ষে ৮ ক্যারেক্টার"
+              placeholder="At least 8 characters"
             />
 
-            <label className="block text-sm text-slate-600 mb-1">আবার লিখুন</label>
+            <label className="block text-sm text-slate-600 mb-1">Confirm Password</label>
             <input
               type="password"
               required
@@ -93,7 +93,7 @@ export default function ResetPasswordPage() {
               disabled={submitting}
               className="w-full bg-brand text-white rounded-md py-2 font-medium hover:bg-brand-light transition disabled:opacity-60"
             >
-              {submitting ? "সেভ হচ্ছে..." : "পাসওয়ার্ড আপডেট করুন"}
+              {submitting ? "Saving..." : "Update Password"}
             </button>
 
             {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
 
         {success && (
           <p className="text-sm text-green-600">
-            পাসওয়ার্ড আপডেট হয়ে গেছে! Dashboard-এ নিয়ে যাওয়া হচ্ছে...
+            Password updated! Redirecting to dashboard...
           </p>
         )}
       </div>

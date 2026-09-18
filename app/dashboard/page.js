@@ -77,8 +77,8 @@ export default function DashboardPage() {
       </div>
 
       <p className="text-slate-400 text-sm mt-8">
-        "Requirements" কার্ডের সংখ্যাটা এখন সরাসরি Supabase থেকে আসছে — বাকি কার্ডগুলো এখনো
-        placeholder, পরের ধাপে প্রজেক্ট ও অ্যাপ্রুভাল টেবিল যুক্ত হলে সেগুলোও real data দেখাবে।
+        The "Requirements" count comes directly from Supabase now — the other cards are still
+        placeholders and will show real data once the Projects and Approvals tables are wired up.
       </p>
     </main>
   );
