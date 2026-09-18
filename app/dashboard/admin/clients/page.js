@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
-import { AGENCY_ROLES } from "@/lib/roleCategory";
-
-
+import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 export default function ClientsListPage() {
-  const { checked, allowed } = useRequireRole(AGENCY_ROLES);
+  const { checked, allowed, role } = useRequireRole(ALL_STAFF_ROLES);
+  const isAgency = AGENCY_ROLES.includes(role);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,13 +26,13 @@ export default function ClientsListPage() {
   }, [checked, allowed]);
 
   if (!checked) {
-    return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
+    return <main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>;
   }
 
   if (!allowed) {
     return (
-      <main className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
-        This page is for team members only. You don't have access.
+      <main className="flex items-center justify-center py-20 text-slate-500 text-sm">
+        This page is for agency staff only. You don't have access.
       </main>
     );
   }
@@ -48,12 +47,14 @@ export default function ClientsListPage() {
               ← Back to dashboard
             </a>
           </div>
-          <a
-            href="/dashboard/admin/clients/new"
-            className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
-          >
-            + New Client
-          </a>
+          {isAgency && (
+            <a
+              href="/dashboard/admin/clients/new"
+              className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
+            >
+              + New Client
+            </a>
+          )}
         </div>
 
         {loading && <p className="text-slate-400 text-sm">Loading...</p>}
@@ -61,7 +62,7 @@ export default function ClientsListPage() {
 
         {!loading && !error && clients.length === 0 && (
           <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-slate-400 text-sm">
-            No clients yet. Click "+ New Client" above to add the first one.
+            No clients yet.
           </div>
         )}
 
@@ -74,7 +75,8 @@ export default function ClientsListPage() {
                   <th className="px-4 py-3 font-medium">Contact</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Team</th>
+                  <th className="px-4 py-3 font-medium">Open</th>
+                  {isAgency && <th className="px-4 py-3 font-medium">Team</th>}
                 </tr>
               </thead>
               <tbody>
@@ -90,12 +92,22 @@ export default function ClientsListPage() {
                     </td>
                     <td className="px-4 py-3">
                       <a
-                        href={`/dashboard/admin/clients/${c.id}/assign`}
+                        href={`/dashboard/clients/${c.id}`}
                         className="text-brand text-xs hover:underline"
                       >
-                        Assign Team
+                        Switch to Client →
                       </a>
                     </td>
+                    {isAgency && (
+                      <td className="px-4 py-3">
+                        <a
+                          href={`/dashboard/admin/clients/${c.id}/assign`}
+                          className="text-brand text-xs hover:underline"
+                        >
+                          Assign Team
+                        </a>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

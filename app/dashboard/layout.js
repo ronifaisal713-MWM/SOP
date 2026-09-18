@@ -15,12 +15,14 @@ const NAV_BY_CATEGORY = {
   ],
   staff: [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/admin/clients", label: "Clients" },
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
   ],
   client: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/requirements", label: "Requirements" },
+    { href: "/dashboard/messages", label: "Messages" },
   ],
 };
 
@@ -31,7 +33,10 @@ const NAV_BY_CATEGORY = {
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const [category, setCategory] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [checked, setChecked] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -43,15 +48,25 @@ export default function DashboardLayout({ children }) {
         return;
       }
 
+      const uid = sessionData.session.user.id;
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", sessionData.session.user.id)
+        .eq("id", uid)
         .single();
 
       if (!isMounted) return;
+      setUserId(uid);
       setCategory(categoryForRole(profile?.role));
       setChecked(true);
+
+      const { data: notifs } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      if (isMounted) setNotifications(notifs || []);
     }
 
     load();
@@ -66,12 +81,39 @@ export default function DashboardLayout({ children }) {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setNotifications((prev) => [payload.new, ...prev].slice(0, 15));
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [userId]);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     window.location.href = "/login";
   }
 
+  async function handleOpenNotifications() {
+    setShowNotifications((s) => !s);
+    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+    if (unreadIds.length > 0) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+    }
+  }
+
   const navItems = NAV_BY_CATEGORY[category] || [];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -89,13 +131,39 @@ export default function DashboardLayout({ children }) {
               </a>
             ))}
         </div>
+
         {checked && (
-          <button
-            onClick={handleSignOut}
-            className="text-sm text-slate-500 hover:text-brand transition"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-4 relative">
+            <button onClick={handleOpenNotifications} className="relative text-lg" title="Notifications">
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 top-8 w-72 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-20">
+                {notifications.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
+                )}
+                {notifications.map((n) => (
+                  <div key={n.id} className="px-3 py-2 border-b border-slate-100 last:border-0">
+                    <p className="text-xs font-medium text-slate-700">{n.title}</p>
+                    {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-slate-500 hover:text-brand transition"
+            >
+              Sign Out
+            </button>
+          </div>
         )}
       </header>
 
