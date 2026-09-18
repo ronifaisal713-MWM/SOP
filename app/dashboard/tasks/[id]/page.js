@@ -159,7 +159,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="px-6 py-10">
       <div className="max-w-2xl mx-auto">
         <a href="/dashboard/tasks" className="text-sm text-slate-500 hover:underline">
           ← Task Board

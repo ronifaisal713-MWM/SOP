@@ -4,23 +4,33 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 
 export default function RequirementDetailPage() {
-  const { checked } = useRequireAuth();
+  const { user, checked } = useRequireAuth();
   const router = useRouter();
   const params = useParams();
   const { id } = params;
 
   const [requirement, setRequirement] = useState(null);
   const [task, setTask] = useState(null);
+  const [isStaff, setIsStaff] = useState(false);
   const [loading, setLoading] = useState(true);
   const [converting, setConverting] = useState(false);
   const [error, setError] = useState("");
 
   async function loadData() {
     setLoading(true);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    setIsStaff(!!profile?.role && ALL_STAFF_ROLES.includes(profile.role));
+
     const { data: reqData, error: reqError } = await supabase
       .from("requirements")
       .select("*")
@@ -45,10 +55,10 @@ export default function RequirementDetailPage() {
   }
 
   useEffect(() => {
-    if (!checked || !id) return;
+    if (!checked || !user || !id) return;
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, id]);
+  }, [checked, user, id]);
 
   async function handleConvertToTask() {
     setConverting(true);
@@ -99,7 +109,7 @@ export default function RequirementDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="px-6 py-10">
       <div className="max-w-2xl mx-auto">
         <a href="/dashboard/requirements" className="text-sm text-slate-500 hover:underline">
           ← Requirements list
@@ -156,7 +166,7 @@ export default function RequirementDetailPage() {
                   Open Task &amp; Chat
                 </a>
               </div>
-            ) : (
+            ) : isStaff ? (
               <button
                 onClick={handleConvertToTask}
                 disabled={converting}
@@ -164,6 +174,11 @@ export default function RequirementDetailPage() {
               >
                 {converting ? "Converting..." : "Convert to Task"}
               </button>
+            ) : (
+              <p className="text-sm text-slate-400">
+                Your agency hasn't started work on this yet -- you'll see updates here once they
+                do.
+              </p>
             )}
           </div>
         </div>

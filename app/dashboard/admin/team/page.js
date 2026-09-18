@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
-
-const STAFF_ROLES = ["super_admin", "admin", "project_manager", "team_lead", "employee"];
+import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 const ROLE_LABEL = {
   super_admin: "Owner",
@@ -15,7 +14,7 @@ const ROLE_LABEL = {
 };
 
 export default function TeamListPage() {
-  const { checked, allowed, user } = useRequireRole(STAFF_ROLES);
+  const { checked, allowed, user } = useRequireRole(AGENCY_ROLES);
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +23,7 @@ export default function TeamListPage() {
     supabase
       .from("profiles")
       .select("id, full_name, role")
-      .in("role", STAFF_ROLES)
+      .in("role", ALL_STAFF_ROLES)
       .then(({ data }) => {
         setTeam(data || []);
         setLoading(false);
@@ -54,7 +53,7 @@ export default function TeamListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="px-6 py-10">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

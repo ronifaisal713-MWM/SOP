@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRequireAuth } from "@/lib/useRequireAuth";
+import { useRequireRole } from "@/lib/useRequireRole";
+import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -39,14 +40,14 @@ function Avatar({ name }) {
 }
 
 export default function TasksKanbanPage() {
-  const { checked } = useRequireAuth();
+  const { checked, allowed } = useRequireRole(ALL_STAFF_ROLES);
   const [tasks, setTasks] = useState([]);
   const [profileMap, setProfileMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!checked) return;
+    if (!checked || !allowed) return;
     loadTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked]);
@@ -93,11 +94,19 @@ export default function TasksKanbanPage() {
   }
 
   if (!checked) {
-    return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
+    return <main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>;
+  }
+
+  if (!allowed) {
+    return (
+      <main className="flex items-center justify-center py-20 text-slate-500 text-sm">
+        This page is for agency staff only. You don't have access.
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-brand">Task Board</h1>

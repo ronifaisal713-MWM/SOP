@@ -68,7 +68,10 @@ export async function POST(request) {
     // 2. Create or invite the login (auth) user for this client.
     let newUser;
     if (mode === "invite") {
-      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+      const origin = new URL(request.url).origin;
+      const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${origin}/reset-password`,
+      });
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }

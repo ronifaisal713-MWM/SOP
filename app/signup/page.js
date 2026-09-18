@@ -38,7 +38,7 @@ export default function SignupPage() {
 
     setSuccess(true);
     setTimeout(() => {
-      window.location.href = "/login";
+      window.location.href = "/login/agency";
     }, 2000);
   }
 
@@ -106,7 +106,7 @@ export default function SignupPage() {
         )}
 
         <div className="mt-6 text-center">
-          <a href="/login" className="text-xs text-slate-500 hover:underline">
+          <a href="/login/agency" className="text-xs text-slate-500 hover:underline">
             Already have an account? Sign in
           </a>
         </div>
