@@ -59,6 +59,7 @@ function DashboardLayoutInner({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [chatOpen, setChatOpen] = useState(searchParams.get("openChat") === "1");
   const [isPlatformOwner, setIsPlatformOwner] = useState(false);
+  const [deletionStatus, setDeletionStatus] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -73,7 +74,7 @@ function DashboardLayoutInner({ children }) {
       const sessionUser = sessionData.session.user;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_platform_owner")
+        .select("role, is_platform_owner, organization_id, deletion_requested_at")
         .eq("id", sessionUser.id)
         .single();
 
@@ -84,6 +85,36 @@ function DashboardLayoutInner({ children }) {
       const cat = categoryForRole(profile?.role);
       setCategory(cat);
       setChecked(true);
+
+      if (profile?.deletion_requested_at) {
+        setDeletionStatus({ scope: "self", requestedAt: profile.deletion_requested_at });
+      } else {
+        let orgIdToCheck = profile?.organization_id || null;
+
+        if (cat === "client") {
+          const { data: clientUser } = await supabase
+            .from("client_users")
+            .select("client_id, clients(organization_id)")
+            .eq("id", sessionUser.id)
+            .maybeSingle();
+          orgIdToCheck = clientUser?.clients?.organization_id || null;
+        }
+
+        if (orgIdToCheck) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("deletion_requested_at")
+            .eq("id", orgIdToCheck)
+            .maybeSingle();
+          if (org?.deletion_requested_at) {
+            setDeletionStatus({
+              scope: "agency",
+              requestedAt: org.deletion_requested_at,
+              isOwner: profile?.role === "super_admin",
+            });
+          }
+        }
+      }
 
       if (cat === "client") {
         const { data: clientUser } = await supabase
@@ -153,6 +184,19 @@ function DashboardLayoutInner({ children }) {
 
     return () => supabase.removeChannel(channel);
   }, [user]);
+
+  async function handleCancelDeletion() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    await fetch("/api/account/cancel-deletion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ scope: deletionStatus?.scope || "self" }),
+    });
+
+    setDeletionStatus(null);
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -245,7 +289,15 @@ function DashboardLayoutInner({ children }) {
       </header>
 
       {checked ? (
-        children
+        deletionStatus ? (
+          <DeletionPendingNotice
+            status={deletionStatus}
+            onCancel={handleCancelDeletion}
+            onSignOut={handleSignOut}
+          />
+        ) : (
+          children
+        )
       ) : (
         <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
       )}
@@ -324,5 +376,50 @@ export default function DashboardLayout({ children }) {
     >
       <DashboardLayoutInner>{children}</DashboardLayoutInner>
     </Suspense>
+  );
+}
+
+function DeletionPendingNotice({ status, onCancel, onSignOut }) {
+  const requestedAt = new Date(status.requestedAt);
+  const purgeAt = new Date(requestedAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const daysLeft = Math.max(0, Math.ceil((purgeAt - new Date()) / (24 * 60 * 60 * 1000)));
+
+  const canCancel = status.scope === "self" || status.isOwner;
+
+  return (
+    <main className="flex items-center justify-center py-24 px-6">
+      <div className="max-w-md w-full bg-white border border-red-200 rounded-lg p-6 shadow-sm text-center">
+        <p className="text-3xl mb-3">⚠️</p>
+        <h1 className="text-lg font-semibold text-red-600 mb-2">
+          {status.scope === "agency" ? "This agency is scheduled for deletion" : "Your account is scheduled for deletion"}
+        </h1>
+        <p className="text-sm text-slate-500 mb-4">
+          {status.scope === "agency"
+            ? "The agency owner requested this. All staff, clients, and data will be permanently removed."
+            : "You requested this. Your account and data will be permanently removed."}{" "}
+          This happens on <strong>{purgeAt.toLocaleDateString()}</strong> ({daysLeft} day
+          {daysLeft === 1 ? "" : "s"} left) unless cancelled before then.
+        </p>
+
+        {canCancel ? (
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
+          >
+            Cancel Deletion
+          </button>
+        ) : (
+          <p className="text-xs text-slate-400 mb-4">
+            Only the agency owner can cancel this. Contact them if this is unexpected.
+          </p>
+        )}
+
+        <div className="mt-4">
+          <button onClick={onSignOut} className="text-xs text-slate-400 hover:underline">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }

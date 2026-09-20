@@ -27,6 +27,7 @@ async function uploadImage(file, folder) {
 export default function ProfilePage() {
   const { user, checked } = useRequireAuth();
   const [category, setCategory] = useState(null);
+  const [role, setRole] = useState(null);
   const [isAgency, setIsAgency] = useState(false);
   const [isPlatformOwner, setIsPlatformOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -94,6 +95,7 @@ export default function ProfilePage() {
 
     const cat = categoryForRole(profile?.role);
     setCategory(cat);
+    setRole(profile?.role || null);
     setIsAgency(AGENCY_ROLES.includes(profile?.role));
     setIsPlatformOwner(!!profile?.is_platform_owner);
 
@@ -357,6 +359,30 @@ export default function ProfilePage() {
       return;
     }
     setSuccess("Company details updated.");
+  }
+
+  async function handleRequestDeletion(scope) {
+    const confirmMsg =
+      scope === "agency"
+        ? "This deletes your ENTIRE agency -- all staff, all clients, all data -- in 3 days unless cancelled. Continue?"
+        : "This deletes your account and data in 3 days unless cancelled. Continue?";
+    if (!confirm(confirmMsg)) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    const res = await fetch("/api/account/request-deletion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ scope }),
+    });
+
+    if (res.ok) {
+      window.location.href = "/dashboard";
+    } else {
+      const result = await res.json();
+      setError(result.error || "Something went wrong");
+    }
   }
 
   if (!checked || loading) {
@@ -724,6 +750,41 @@ export default function ProfilePage() {
               {savingClient ? "Saving..." : "Save Company Details"}
             </button>
           </form>
+        )}
+
+        {/* ---------- Danger Zone (everyone, not shown to Platform Owner) ---------- */}
+        {!isPlatformOwner && (
+          <div className="bg-white border border-red-200 rounded-lg p-6 shadow-sm space-y-3">
+            <h2 className="text-sm font-semibold text-red-600">Danger Zone</h2>
+
+            {role === "super_admin" ? (
+              <>
+                <p className="text-xs text-slate-500">
+                  Deleting your agency removes every staff member, every client, and all their
+                  data. This cannot be undone after 3 days.
+                </p>
+                <button
+                  onClick={() => handleRequestDeletion("agency")}
+                  className="text-sm border border-red-300 text-red-600 rounded-md px-4 py-2 font-medium hover:bg-red-50 transition"
+                >
+                  Delete My Agency
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500">
+                  Deleting your account removes your access and data. This cannot be undone after
+                  3 days.
+                </p>
+                <button
+                  onClick={() => handleRequestDeletion("self")}
+                  className="text-sm border border-red-300 text-red-600 rounded-md px-4 py-2 font-medium hover:bg-red-50 transition"
+                >
+                  Delete My Account
+                </button>
+              </>
+            )}
+          </div>
         )}
       </div>
     </main>
