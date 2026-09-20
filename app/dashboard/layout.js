@@ -16,6 +16,7 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
+    { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
   ],
   staff: [
     { href: "/dashboard", label: "Dashboard" },
@@ -23,11 +24,13 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
+    { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
   ],
   client: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/my-tasks", label: "My Tasks" },
     { href: "/dashboard/requirements", label: "Requirements" },
+    { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
   ],
 };
 
