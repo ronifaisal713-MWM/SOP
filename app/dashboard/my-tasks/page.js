@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import ChatWidget from "@/components/ChatWidget";
+import TaskChat from "@/components/TaskChat";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -25,6 +27,7 @@ export default function MyTasksPage() {
   const [revisionNoteFor, setRevisionNoteFor] = useState(null);
   const [revisionNote, setRevisionNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [openChatTask, setOpenChatTask] = useState(null);
 
   useEffect(() => {
     if (!checked || !user) return;
@@ -157,12 +160,12 @@ export default function MyTasksPage() {
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                       </p>
-                      <a
-                        href={`/dashboard/tasks/${t.id}`}
+                      <button
+                        onClick={() => setOpenChatTask(t)}
                         className="text-xs text-brand hover:underline block mb-2"
                       >
-                        View &amp; Chat
-                      </a>
+                        💬 View &amp; Chat
+                      </button>
 
                       {t.status === "client_review" && (
                         <div className="border-t border-slate-100 pt-2 mt-2 space-y-2">
@@ -225,6 +228,17 @@ export default function MyTasksPage() {
             );
           })}
         </div>
+      )}
+
+      {openChatTask && (
+        <ChatWidget
+          title={`💬 ${openChatTask.title}`}
+          open={true}
+          onToggle={() => setOpenChatTask(null)}
+          onClose={() => setOpenChatTask(null)}
+        >
+          <TaskChat taskId={openChatTask.id} currentUser={user} isStaff={false} />
+        </ChatWidget>
       )}
     </main>
   );
