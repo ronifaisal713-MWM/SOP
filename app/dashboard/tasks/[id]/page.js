@@ -28,6 +28,8 @@ export default function TaskDetailPage() {
   const [isStaff, setIsStaff] = useState(false);
   const [team, setTeam] = useState([]);
   const [assigneeName, setAssigneeName] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -75,6 +77,27 @@ export default function TaskDetailPage() {
     }
 
     setLoading(false);
+    loadHistory();
+  }
+
+  async function loadHistory() {
+    const { data } = await supabase
+      .from("activity_log")
+      .select("*")
+      .eq("entity_type", "task")
+      .eq("entity_id", id)
+      .order("created_at", { ascending: false });
+
+    const rows = data || [];
+    if (rows.length > 0) {
+      const actorIds = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", actorIds);
+      const map = {};
+      (profiles || []).forEach((p) => (map[p.id] = p.full_name));
+      setHistory(rows.map((r) => ({ ...r, actorName: map[r.actor_id] || "Unknown" })));
+    } else {
+      setHistory([]);
+    }
   }
 
   useEffect(() => {
@@ -86,6 +109,7 @@ export default function TaskDetailPage() {
   async function moveStatus(newStatus) {
     setTask((t) => ({ ...t, status: newStatus }));
     await supabase.from("tasks").update({ status: newStatus }).eq("id", id);
+    loadHistory();
   }
 
   async function assignTask(newAssigneeId) {
@@ -180,6 +204,35 @@ export default function TaskDetailPage() {
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4">
+          <button
+            onClick={() => setShowHistory((s) => !s)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left"
+          >
+            <h2 className="text-sm font-semibold text-slate-600">
+              History {history.length > 0 && `(${history.length})`}
+            </h2>
+            <span className="text-slate-400 text-xs">{showHistory ? "▲" : "▼"}</span>
+          </button>
+
+          {showHistory && (
+            <div className="border-t border-slate-100 px-4 py-3 space-y-2 max-h-48 overflow-y-auto">
+              {history.length === 0 && (
+                <p className="text-xs text-slate-300">No status changes yet.</p>
+              )}
+              {history.map((h) => (
+                <div key={h.id} className="text-xs text-slate-500">
+                  <span className="font-medium text-slate-700">{h.actorName}</span> — {h.action}
+                  <span className="text-slate-300">
+                    {" · "}
+                    {new Date(h.created_at).toLocaleString()}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
