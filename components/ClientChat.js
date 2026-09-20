@@ -115,6 +115,24 @@ export default function ClientChat({
         .select("id, full_name")
         .in("role", ALL_STAFF_ROLES)
         .then(({ data }) => setTeam((data || []).filter((m) => m.id !== currentUser.id)));
+    } else if (isClient) {
+      // Clients only see teammates actually assigned to their company --
+      // not the whole agency roster. client_team_members.user_id points
+      // at auth.users, not profiles, so this is two queries rather than
+      // one PostgREST embed.
+      supabase
+        .from("client_team_members")
+        .select("user_id")
+        .eq("client_id", clientId)
+        .then(async ({ data: assignments }) => {
+          const ids = (assignments || []).map((a) => a.user_id);
+          if (ids.length === 0) return;
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", ids);
+          setTeam(profiles || []);
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -386,7 +404,7 @@ export default function ClientChat({
               }}
             />
           </label>
-          {(isAgency || isStaffOnly) && (
+          {(isAgency || isStaffOnly || isClient) && (
             <button
               type="button"
               onClick={() => setShowMentionPicker((s) => !s)}

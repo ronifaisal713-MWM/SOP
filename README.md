@@ -43,7 +43,8 @@ Billing.
    placeholder secret key inside it first -- see the comment at its top),
    then `supabase/migration_012_tasks_updated_at_trigger.sql`, then
    `supabase/migration_013_staff_personal_messages.sql`, then
-   `supabase/migration_014_mentions.sql`.
+   `supabase/migration_014_mentions.sql`, then
+   `supabase/migration_015_client_read_assigned_staff.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
