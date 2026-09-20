@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 100;
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 

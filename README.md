@@ -38,7 +38,9 @@ Billing.
    `supabase/migration_007_multi_tenant.sql`, then
    `supabase/migration_008_client_chat_and_notifications.sql`, then
    `supabase/migration_009_client_task_approvals.sql`, then
-   `supabase/migration_010_assignment_scoping_and_notification_links.sql`.
+   `supabase/migration_010_assignment_scoping_and_notification_links.sql`, then
+   `supabase/migration_011_file_limit_and_auto_delete.sql` (edit the
+   placeholder secret key inside it first -- see the comment at its top).
 5. Run the dev server:
    ```bash
    npm run dev
