@@ -210,6 +210,13 @@ function DashboardLayoutInner({ children }) {
               </div>
             )}
 
+            <a
+              href="/dashboard/profile"
+              className="text-sm text-slate-500 hover:text-brand transition"
+            >
+              👤 Profile
+            </a>
+
             <button
               onClick={handleSignOut}
               className="text-sm text-slate-500 hover:text-brand transition"
