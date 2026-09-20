@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [savingPersonal, setSavingPersonal] = useState(false);
 
   // Password change
+  const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
@@ -63,6 +64,13 @@ export default function ProfilePage() {
   const [businessType, setBusinessType] = useState("");
   const [targetMarket, setTargetMarket] = useState("");
   const [savingClient, setSavingClient] = useState(false);
+
+  // Email change request
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailReason, setEmailReason] = useState("");
+  const [submittingEmailRequest, setSubmittingEmailRequest] = useState(false);
+  const [myEmailRequests, setMyEmailRequests] = useState([]);
 
   useEffect(() => {
     if (!checked || !user) return;
@@ -128,6 +136,17 @@ export default function ProfilePage() {
     }
 
     setLoading(false);
+    loadEmailRequestsFor(user.id);
+  }
+
+  async function loadEmailRequestsFor(userId) {
+    const { data } = await supabase
+      .from("email_change_requests")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMyEmailRequests(data || []);
   }
 
   function validateImage(file) {
@@ -148,6 +167,53 @@ export default function ProfilePage() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function handlePlatformEmailChange() {
+    if (!newEmail.trim()) return;
+    setSubmittingEmailRequest(true);
+    setError("");
+    setSuccess("");
+
+    const { error: emailError } = await supabase.auth.updateUser({ email: newEmail.trim() });
+    setSubmittingEmailRequest(false);
+
+    if (emailError) {
+      setError(emailError.message);
+      return;
+    }
+    setNewEmail("");
+    setShowEmailForm(false);
+    setSuccess("Confirmation link sent to the new email address.");
+  }
+
+  async function handleRequestEmailChange(e) {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+
+    setSubmittingEmailRequest(true);
+    setError("");
+    setSuccess("");
+
+    const { error: insertError } = await supabase.from("email_change_requests").insert({
+      user_id: user.id,
+      current_email: user.email,
+      requested_email: newEmail.trim(),
+      reason: emailReason.trim() || null,
+    });
+
+    setSubmittingEmailRequest(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    setNewEmail("");
+    setEmailReason("");
+    setShowEmailForm(false);
+    setSuccess("Email change request submitted for review.");
+    loadEmailRequestsFor(user.id);
   }
 
   async function handleSavePersonal(e) {
@@ -174,8 +240,12 @@ export default function ProfilePage() {
     setError("");
     setSuccess("");
 
+    if (!oldPassword) {
+      setError("Enter your current password.");
+      return;
+    }
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("New password must be at least 8 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -184,6 +254,19 @@ export default function ProfilePage() {
     }
 
     setSavingPassword(true);
+
+    // Verify the current password by re-authenticating with it --
+    // Supabase has no separate "check my current password" call.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: oldPassword,
+    });
+    if (verifyError) {
+      setSavingPassword(false);
+      setError("Current password is incorrect.");
+      return;
+    }
+
     const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
 
@@ -191,6 +274,7 @@ export default function ProfilePage() {
       setError(pwError.message);
       return;
     }
+    setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setSuccess("Password updated.");
@@ -333,6 +417,110 @@ export default function ProfilePage() {
               disabled
               className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-slate-50 text-slate-400"
             />
+
+            {category === "platform" ? (
+              <div className="mt-2">
+                <p className="text-xs text-slate-400 mb-2">
+                  As the Platform Owner, you can change your email directly. Supabase will send a
+                  confirmation link to the new address.
+                </p>
+                {!showEmailForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailForm(true)}
+                    className="text-brand text-xs hover:underline"
+                  >
+                    Change email
+                  </button>
+                ) : (
+                  <div className="border border-slate-200 rounded-md p-3 space-y-2">
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="new@example.com"
+                      className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePlatformEmailChange}
+                      disabled={submittingEmailRequest || !newEmail.trim()}
+                      className="px-3 py-1.5 rounded-md bg-brand text-white text-xs font-medium hover:bg-brand-light transition disabled:opacity-60"
+                    >
+                      {submittingEmailRequest ? "Updating..." : "Send Confirmation Link"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-slate-400 mt-1">
+                  Changing your email needs approval
+                  {isAgency ? " from the Platform Owner" : " from your agency's Owner/Admin"}.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailForm((s) => !s)}
+                    className="text-brand hover:underline"
+                  >
+                    Request a change
+                  </button>
+                </p>
+
+                {myEmailRequests.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {myEmailRequests.map((r) => (
+                      <p key={r.id} className="text-xs text-slate-400">
+                        → {r.requested_email}:{" "}
+                        <span
+                          className={
+                            r.status === "approved"
+                              ? "text-green-600"
+                              : r.status === "rejected"
+                              ? "text-red-500"
+                              : "text-amber-500"
+                          }
+                        >
+                          {r.status}
+                        </span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {showEmailForm && (
+                  <div className="mt-3 border border-slate-200 rounded-md p-3 space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">New Email</label>
+                      <input
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                        placeholder="new@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">
+                        Reason (optional)
+                      </label>
+                      <input
+                        value={emailReason}
+                        onChange={(e) => setEmailReason(e.target.value)}
+                        className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRequestEmailChange}
+                      disabled={submittingEmailRequest || !newEmail.trim()}
+                      className="px-3 py-1.5 rounded-md bg-brand text-white text-xs font-medium hover:bg-brand-light transition disabled:opacity-60"
+                    >
+                      {submittingEmailRequest ? "Submitting..." : "Submit Request"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <button
@@ -347,6 +535,15 @@ export default function ProfilePage() {
         {/* ---------- Password ---------- */}
         <form onSubmit={handleChangePassword} className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold text-slate-700">Change Password</h2>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">New Password</label>
             <input

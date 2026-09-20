@@ -9,6 +9,10 @@ import ClientChat from "@/components/ClientChat";
 import StaffChat from "@/components/StaffChat";
 
 const NAV_BY_CATEGORY = {
+  platform: [
+    { href: "/dashboard/platform", label: "Dashboard" },
+    { href: "/dashboard/platform/email-requests", label: "Email Requests" },
+  ],
   agency: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/admin/clients", label: "Clients" },
@@ -17,6 +21,7 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/admin/email-requests", label: "Email Requests" },
   ],
   staff: [
     { href: "/dashboard", label: "Dashboard" },

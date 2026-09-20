@@ -46,7 +46,9 @@ Billing.
    `supabase/migration_014_mentions.sql`, then
    `supabase/migration_015_client_read_assigned_staff.sql`, then
    `supabase/migration_016_monthly_reports.sql`, then
-   `supabase/migration_017_profile_sections.sql`.
+   `supabase/migration_017_profile_sections.sql`, then
+   `supabase/migration_018_platform_owner_and_email_requests.sql`
+   (this one must be run in the two steps marked inside it).
 5. Run the dev server:
    ```bash
    npm run dev
