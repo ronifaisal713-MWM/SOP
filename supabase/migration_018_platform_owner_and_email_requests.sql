@@ -2,17 +2,14 @@
 -- MWM Agency OS — Migration 018: Platform Owner + Email Change Requests
 -- Run this in Supabase SQL Editor AFTER migration_017
 --
--- IMPORTANT: run this in TWO STEPS. Postgres doesn't allow a newly
--- added enum value to be used in the same transaction it was created
--- in. Select and run STEP 1 alone first, wait for it to succeed, then
--- select and run STEP 2.
+-- Superseded design note: this originally added a 'platform_owner'
+-- enum value to profiles.role and set roni.faisal713@gmail.com to it
+-- directly. migration_019 replaced that with an independent
+-- is_platform_owner boolean flag instead (so the same account can be
+-- BOTH an Agency owner and the Platform Owner), so that enum value and
+-- role assignment are no longer needed at all -- this file has been
+-- revised to drop both. Run this file, then migration_019, in order.
 -- =========================================================
-
--- ============ STEP 1 -- run this alone first ============
-alter type user_role add value if not exists 'platform_owner';
-
-
--- ============ STEP 2 -- run this after STEP 1 succeeds ============
 
 -- ---------- Helper: get any user's organization (not just your own) ----------
 -- current_user_org_id() only ever answers for auth.uid(). Reviewing an
@@ -85,6 +82,11 @@ create policy "agency_review_org_email_requests" on email_change_requests
     and get_user_org_id(user_id) = current_user_org_id()
   );
 
+-- Note: current_user_role() returns role::text, so comparing it to the
+-- text 'platform_owner' below is valid even though that's never an
+-- actual value in the user_role enum -- it will just never match until
+-- migration_019 drops and replaces these two policies with a check
+-- against the is_platform_owner flag instead.
 create policy "platform_owner_read_agency_requests" on email_change_requests
   for select
   using (
@@ -119,7 +121,7 @@ create policy "platform_owner_review_agency_requests" on email_change_requests
 -- Enough for platform-wide counts/stats -- deliberately NOT extended to
 -- requirements, tasks, or messages: an agency's actual client work and
 -- conversations stay private to that agency, even from the Platform
--- Owner.
+-- Owner. (Also superseded by migration_019 -- see note above.)
 create policy "platform_owner_read_all_organizations" on organizations
   for select
   using (current_user_role() = 'platform_owner');
@@ -131,17 +133,3 @@ create policy "platform_owner_read_all_profiles" on profiles
 create policy "platform_owner_read_all_clients" on clients
   for select
   using (current_user_role() = 'platform_owner');
-
--- ---------- Promote the platform's own account ----------
--- roni.faisal713@gmail.com becomes the one Platform Owner account,
--- overseeing every agency rather than belonging to one.
---
--- NOTE: this account was previously the super_admin (owner) of the
--- "Macarthur Web & Marketing Agency" test organization. After this
--- runs, it can no longer sign in through /login/agency for that
--- org -- only through /login/platform. If you still want an active
--- owner for that agency's data, create a separate account for it
--- (e.g. via /signup with a different email) before or after this.
-update profiles
-set role = 'platform_owner', organization_id = null
-where id = (select id from auth.users where email = 'roni.faisal713@gmail.com');
