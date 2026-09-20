@@ -51,7 +51,8 @@ Billing.
    `supabase/migration_019_dual_agency_platform_owner.sql`, then
    `supabase/migration_020_task_status_history.sql`, then
    `supabase/migration_021_monthly_report_rolling_expiry.sql`, then
-   `supabase/migration_022_account_deletion.sql`.
+   `supabase/migration_022_account_deletion.sql`, then
+   `supabase/migration_023_client_social_links.sql`.
 5. Run the dev server:
    ```bash
    npm run dev

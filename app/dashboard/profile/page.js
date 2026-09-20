@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { AGENCY_ROLES, categoryForRole } from "@/lib/roleCategory";
+import SocialLinksManager from "@/components/SocialLinksManager";
 
 const MAX_IMAGE_SIZE_MB = 5;
 
@@ -772,6 +773,8 @@ export default function ProfilePage() {
             </button>
           </form>
         )}
+
+        {category === "client" && clientId && <SocialLinksManager clientId={clientId} />}
 
         {/* ---------- Danger Zone (everyone, not shown to Platform Owner) ---------- */}
         {!isPlatformOwner && (

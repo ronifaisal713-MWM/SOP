@@ -7,6 +7,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ClientChat from "@/components/ClientChat";
 import ChatWidget from "@/components/ChatWidget";
+import SocialLinksManager from "@/components/SocialLinksManager";
 
 function ClientWorkspacePageInner() {
   const { user, checked } = useRequireAuth();
@@ -133,6 +134,10 @@ function ClientWorkspacePageInner() {
               </a>
             ))}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <SocialLinksManager clientId={id} />
         </div>
       </div>
 
