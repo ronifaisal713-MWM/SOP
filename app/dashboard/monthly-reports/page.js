@@ -367,6 +367,12 @@ export default function MonthlyReportsPage() {
                           </a>
                         )}
 
+                        {!r.storage_path && r.file_expired_at && !isDeleted && (
+                          <p className="text-xs text-slate-400 mt-2">
+                            📎 File expired (14-month retention) — report details above are still kept.
+                          </p>
+                        )}
+
                         {isStaffOrAgency && (
                           <p className="text-xs text-slate-400 mt-2">
                             Submitted by {profileMap[r.created_by] || "Unknown"}
