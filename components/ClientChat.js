@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
+const MAX_FILE_SIZE_MB = 5;
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
@@ -306,7 +307,16 @@ export default function ClientChat({
             <input
               type="file"
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const selected = e.target.files?.[0] || null;
+                if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                  setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
+                  e.target.value = "";
+                  return;
+                }
+                setError("");
+                setFile(selected);
+              }}
             />
           </label>
           <input
