@@ -58,6 +58,7 @@ function DashboardLayoutInner({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [chatOpen, setChatOpen] = useState(searchParams.get("openChat") === "1");
+  const [isPlatformOwner, setIsPlatformOwner] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,13 +73,14 @@ function DashboardLayoutInner({ children }) {
       const sessionUser = sessionData.session.user;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, is_platform_owner")
         .eq("id", sessionUser.id)
         .single();
 
       if (!isMounted) return;
       setUser(sessionUser);
       setRole(profile?.role || null);
+      setIsPlatformOwner(!!profile?.is_platform_owner);
       const cat = categoryForRole(profile?.role);
       setCategory(cat);
       setChecked(true);
@@ -213,6 +215,16 @@ function DashboardLayoutInner({ children }) {
                   </a>
                 ))}
               </div>
+            )}
+
+            {isPlatformOwner && category === "agency" && (
+              <a
+                href="/dashboard/platform"
+                className="text-sm text-purple-600 hover:underline"
+                title="Switch to your Platform Owner dashboard"
+              >
+                🔁 Platform View
+              </a>
             )}
 
             <a

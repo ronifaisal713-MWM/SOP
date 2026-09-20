@@ -27,7 +27,7 @@ export async function POST(request) {
 
     const { data: reviewerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role, organization_id")
+      .select("role, organization_id, is_platform_owner")
       .eq("id", reviewerId)
       .single();
 
@@ -63,7 +63,7 @@ export async function POST(request) {
     if (requesterProfile && ["super_admin", "admin"].includes(requesterProfile.role)) {
       // Requester is an Agency owner/admin -- only the Platform Owner
       // can review this.
-      authorized = reviewerProfile?.role === "platform_owner";
+      authorized = reviewerProfile?.is_platform_owner === true;
     } else {
       // Requester is staff or a client -- resolve their organization
       // (staff: via profiles; client: via client_users -> clients).

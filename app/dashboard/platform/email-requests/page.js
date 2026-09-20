@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRequireRole } from "@/lib/useRequireRole";
-import { PLATFORM_ROLES } from "@/lib/roleCategory";
+import { useRequirePlatformOwner } from "@/lib/useRequirePlatformOwner";
 
 export default function AgencyEmailRequestsPage() {
-  const { checked, allowed } = useRequireRole(PLATFORM_ROLES);
+  const { checked, allowed } = useRequirePlatformOwner();
   const [requests, setRequests] = useState([]);
   const [profileMap, setProfileMap] = useState({});
   const [loading, setLoading] = useState(true);

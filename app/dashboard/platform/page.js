@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRequireRole } from "@/lib/useRequireRole";
-import { PLATFORM_ROLES } from "@/lib/roleCategory";
+import { useRequirePlatformOwner } from "@/lib/useRequirePlatformOwner";
 
 export default function PlatformHomePage() {
-  const { checked, allowed, user } = useRequireRole(PLATFORM_ROLES);
+  const { checked, allowed, user } = useRequirePlatformOwner();
   const [counts, setCounts] = useState({
     organizations: null,
     agencyUsers: null,
@@ -72,6 +71,9 @@ export default function PlatformHomePage() {
           <div>
             <h1 className="text-2xl font-semibold text-brand">Platform Overview</h1>
             {user?.email && <p className="text-sm text-slate-500">Signed in as {user.email}</p>}
+            <a href="/dashboard" className="text-xs text-slate-400 hover:underline">
+              ← Switch to Agency Dashboard
+            </a>
           </div>
           <a
             href="/dashboard/platform/email-requests"

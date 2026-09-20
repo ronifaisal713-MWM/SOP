@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { categoryForRole } from "@/lib/roleCategory";
 
 export default function PlatformLoginPage() {
   const [email, setEmail] = useState("");
@@ -24,11 +23,11 @@ export default function PlatformLoginPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("is_platform_owner")
       .eq("id", data.user.id)
       .single();
 
-    if (categoryForRole(profile?.role) !== "platform") {
+    if (!profile?.is_platform_owner) {
       await supabase.auth.signOut();
       setLoading(false);
       setMessage("This sign-in is for the platform owner only.");

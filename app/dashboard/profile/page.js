@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const { user, checked } = useRequireAuth();
   const [category, setCategory] = useState(null);
   const [isAgency, setIsAgency] = useState(false);
+  const [isPlatformOwner, setIsPlatformOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -83,7 +84,7 @@ export default function ProfilePage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, phone, avatar_url, role, organization_id")
+      .select("full_name, phone, avatar_url, role, organization_id, is_platform_owner")
       .eq("id", user.id)
       .single();
 
@@ -94,6 +95,7 @@ export default function ProfilePage() {
     const cat = categoryForRole(profile?.role);
     setCategory(cat);
     setIsAgency(AGENCY_ROLES.includes(profile?.role));
+    setIsPlatformOwner(!!profile?.is_platform_owner);
 
     if (cat === "agency" || cat === "staff") {
       if (profile?.organization_id) {
@@ -418,7 +420,7 @@ export default function ProfilePage() {
               className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-slate-50 text-slate-400"
             />
 
-            {category === "platform" ? (
+            {isPlatformOwner ? (
               <div className="mt-2">
                 <p className="text-xs text-slate-400 mb-2">
                   As the Platform Owner, you can change your email directly. Supabase will send a
