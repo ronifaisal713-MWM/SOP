@@ -14,12 +14,14 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/admin/team", label: "Team" },
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
+    { href: "/dashboard/reports", label: "Reports" },
   ],
   staff: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/admin/clients", label: "Clients" },
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
+    { href: "/dashboard/reports", label: "Reports" },
   ],
   client: [
     { href: "/dashboard", label: "Dashboard" },
