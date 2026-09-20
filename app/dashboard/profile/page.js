@@ -43,6 +43,7 @@ export default function ProfilePage() {
   // Password change
   const [oldPassword, setOldPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
@@ -245,6 +246,7 @@ export default function ProfilePage() {
     setError("");
     setSuccess("");
     setPasswordError("");
+    setConfirmPasswordError("");
 
     if (!oldPassword) {
       setPasswordError("Enter your current password.");
@@ -255,7 +257,7 @@ export default function ProfilePage() {
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("New password and confirm password don't match.");
+      setConfirmPasswordError("New password and confirm password does not match.");
       return;
     }
 
@@ -585,7 +587,10 @@ export default function ProfilePage() {
             <input
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (confirmPasswordError) setConfirmPasswordError("");
+              }}
               placeholder="At least 8 characters"
               className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
             />
@@ -595,9 +600,17 @@ export default function ProfilePage() {
             <input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (confirmPasswordError) setConfirmPasswordError("");
+              }}
+              className={`w-full border rounded-md px-3 py-2 text-sm ${
+                confirmPasswordError ? "border-red-400" : "border-slate-300"
+              }`}
             />
+            {confirmPasswordError && (
+              <p className="text-xs text-red-600 mt-1">{confirmPasswordError}</p>
+            )}
           </div>
           <button
             type="submit"
