@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { categoryForRole } from "@/lib/roleCategory";
+import { categoryForRole, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -70,6 +70,10 @@ export default function ClientChat({
   const [showEmoji, setShowEmoji] = useState(false);
   const [error, setError] = useState("");
 
+  const [team, setTeam] = useState([]);
+  const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [mentionTarget, setMentionTarget] = useState(null);
+
   const bottomRef = useRef(null);
 
   const personalRecipientId = isClient ? currentUser.id : selectedContactId;
@@ -105,6 +109,17 @@ export default function ClientChat({
   }, [clientId, tab, personalRecipientId]);
 
   useEffect(() => {
+    if (isAgency || isStaffOnly) {
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("role", ALL_STAFF_ROLES)
+        .then(({ data }) => setTeam((data || []).filter((m) => m.id !== currentUser.id)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const channel = supabase
       .channel(`client-${clientId}-messages`)
       .on(
@@ -126,6 +141,12 @@ export default function ClientChat({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  function pickMention(member) {
+    setMentionTarget(member);
+    setBody((b) => `@${member.full_name || "teammate"} ${b}`);
+    setShowMentionPicker(false);
+  }
 
   async function handleSend(e) {
     e.preventDefault();
@@ -172,6 +193,7 @@ export default function ClientChat({
       visibility: tab,
       recipient_id: tab === "personal" ? personalRecipientId : null,
       attachment_id: attachmentId,
+      mentioned_user_id: mentionTarget?.id || null,
     });
 
     setSending(false);
@@ -183,6 +205,14 @@ export default function ClientChat({
     setBody("");
     setFile(null);
     setShowEmoji(false);
+    setMentionTarget(null);
+  }
+
+  async function handleAcknowledge(messageId) {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, mention_acknowledged: true } : m))
+    );
+    await supabase.from("messages").update({ mention_acknowledged: true }).eq("id", messageId);
   }
 
   function fileUrl(storagePath) {
@@ -237,11 +267,15 @@ export default function ClientChat({
 
         {messages.map((m) => {
           const isMine = m.sender_id === currentUser.id;
+          const isPendingMentionForMe =
+            m.mentioned_user_id === currentUser.id && !m.mention_acknowledged;
           return (
             <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                  tab === "internal"
+                  isPendingMentionForMe
+                    ? "bg-red-50 border-2 border-red-400 text-red-900"
+                    : tab === "internal"
                     ? "bg-amber-50 border border-amber-200 text-amber-900"
                     : tab === "personal"
                     ? "bg-purple-50 border border-purple-200 text-purple-900"
@@ -261,6 +295,14 @@ export default function ClientChat({
                     📎 {m.files.file_name}
                   </a>
                 )}
+                {isPendingMentionForMe && (
+                  <button
+                    onClick={() => handleAcknowledge(m.id)}
+                    className="mt-2 text-xs bg-red-600 text-white rounded-md px-2 py-1 font-medium hover:bg-red-700 transition"
+                  >
+                    ✓ Acknowledge
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -269,6 +311,15 @@ export default function ClientChat({
       </div>
 
       <form onSubmit={handleSend} className="border-t border-slate-100 p-3">
+        {mentionTarget && (
+          <p className="text-xs text-purple-600 mb-2">
+            Mentioning <strong>{mentionTarget.full_name || "teammate"}</strong>{" "}
+            <button type="button" onClick={() => setMentionTarget(null)} className="text-red-500 ml-1">
+              remove
+            </button>
+          </p>
+        )}
+
         {file && (
           <p className="text-xs text-slate-500 mb-2">
             📎 {file.name}{" "}
@@ -288,6 +339,22 @@ export default function ClientChat({
                 className="text-lg hover:scale-110 transition"
               >
                 {em}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showMentionPicker && (
+          <div className="flex flex-wrap gap-1 mb-2 border border-slate-200 rounded-md p-2 bg-slate-50">
+            {team.length === 0 && <p className="text-xs text-slate-400">No teammates to mention.</p>}
+            {team.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => pickMention(m)}
+                className="text-xs bg-white border border-slate-200 rounded-full px-2 py-1 hover:bg-purple-50"
+              >
+                @{m.full_name || "Unnamed"}
               </button>
             ))}
           </div>
@@ -319,6 +386,16 @@ export default function ClientChat({
               }}
             />
           </label>
+          {(isAgency || isStaffOnly) && (
+            <button
+              type="button"
+              onClick={() => setShowMentionPicker((s) => !s)}
+              className="text-lg px-1"
+              title="Mention someone"
+            >
+              @
+            </button>
+          )}
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}

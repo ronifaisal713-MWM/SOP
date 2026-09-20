@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -40,6 +41,10 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [error, setError] = useState("");
 
+  const [team, setTeam] = useState([]);
+  const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [mentionTarget, setMentionTarget] = useState(null);
+
   const bottomRef = useRef(null);
 
   async function loadMessages() {
@@ -58,6 +63,14 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
   useEffect(() => {
     loadMessages();
 
+    if (isStaff) {
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("role", ALL_STAFF_ROLES)
+        .then(({ data }) => setTeam((data || []).filter((m) => m.id !== currentUser.id)));
+    }
+
     const channel = supabase
       .channel(`task-${taskId}-messages`)
       .on(
@@ -74,6 +87,12 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  function pickMention(member) {
+    setMentionTarget(member);
+    setBody((b) => `@${member.full_name || "teammate"} ${b}`);
+    setShowMentionPicker(false);
+  }
 
   async function handleSend(e) {
     e.preventDefault();
@@ -121,6 +140,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
       body: body.trim() || null,
       visibility,
       attachment_id: attachmentId,
+      mentioned_user_id: mentionTarget?.id || null,
     });
     setSending(false);
 
@@ -131,6 +151,14 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
     setBody("");
     setFile(null);
     setShowEmoji(false);
+    setMentionTarget(null);
+  }
+
+  async function handleAcknowledge(messageId) {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, mention_acknowledged: true } : m))
+    );
+    await supabase.from("messages").update({ mention_acknowledged: true }).eq("id", messageId);
   }
 
   function fileUrl(storagePath) {
@@ -148,11 +176,16 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
         {messages.map((m) => {
           const isMine = m.sender_id === currentUser.id;
           const isInternal = m.visibility === "internal";
+          const isPendingMentionForMe =
+            m.mentioned_user_id === currentUser.id && !m.mention_acknowledged;
+
           return (
             <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                  isInternal
+                  isPendingMentionForMe
+                    ? "bg-red-50 border-2 border-red-400 text-red-900"
+                    : isInternal
                     ? "bg-amber-50 border border-amber-200 text-amber-900"
                     : isMine
                     ? "bg-brand text-white"
@@ -162,7 +195,13 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                 {isStaff && (
                   <p
                     className={`text-[10px] font-medium mb-0.5 ${
-                      isInternal ? "text-amber-600" : isMine ? "text-white/70" : "text-slate-400"
+                      isPendingMentionForMe
+                        ? "text-red-500"
+                        : isInternal
+                        ? "text-amber-600"
+                        : isMine
+                        ? "text-white/70"
+                        : "text-slate-400"
                     }`}
                   >
                     {isInternal ? "🟠 Internal Note" : "🔵 Client Message"}
@@ -178,6 +217,14 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                   >
                     📎 {m.files.file_name}
                   </a>
+                )}
+                {isPendingMentionForMe && (
+                  <button
+                    onClick={() => handleAcknowledge(m.id)}
+                    className="mt-2 text-xs bg-red-600 text-white rounded-md px-2 py-1 font-medium hover:bg-red-700 transition"
+                  >
+                    ✓ Acknowledge
+                  </button>
                 )}
               </div>
             </div>
@@ -208,6 +255,15 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
           </div>
         )}
 
+        {mentionTarget && (
+          <p className="text-xs text-purple-600 mb-2">
+            Mentioning <strong>{mentionTarget.full_name || "teammate"}</strong>{" "}
+            <button type="button" onClick={() => setMentionTarget(null)} className="text-red-500 ml-1">
+              remove
+            </button>
+          </p>
+        )}
+
         {file && (
           <p className="text-xs text-slate-500 mb-2">
             📎 {file.name}{" "}
@@ -227,6 +283,22 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                 className="text-lg hover:scale-110 transition"
               >
                 {em}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showMentionPicker && (
+          <div className="flex flex-wrap gap-1 mb-2 border border-slate-200 rounded-md p-2 bg-slate-50">
+            {team.length === 0 && <p className="text-xs text-slate-400">No teammates to mention.</p>}
+            {team.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => pickMention(m)}
+                className="text-xs bg-white border border-slate-200 rounded-full px-2 py-1 hover:bg-purple-50"
+              >
+                @{m.full_name || "Unnamed"}
               </button>
             ))}
           </div>
@@ -258,6 +330,16 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
               }}
             />
           </label>
+          {isStaff && (
+            <button
+              type="button"
+              onClick={() => setShowMentionPicker((s) => !s)}
+              className="text-lg px-1"
+              title="Mention someone"
+            >
+              @
+            </button>
+          )}
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}

@@ -42,7 +42,8 @@ Billing.
    `supabase/migration_011_file_limit_and_auto_delete.sql` (edit the
    placeholder secret key inside it first -- see the comment at its top),
    then `supabase/migration_012_tasks_updated_at_trigger.sql`, then
-   `supabase/migration_013_staff_personal_messages.sql`.
+   `supabase/migration_013_staff_personal_messages.sql`, then
+   `supabase/migration_014_mentions.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
