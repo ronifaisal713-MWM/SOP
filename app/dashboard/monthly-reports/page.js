@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { ALL_STAFF_ROLES, categoryForRole } from "@/lib/roleCategory";
+import { categoryForRole } from "@/lib/roleCategory";
 
 const MAX_FILE_SIZE_MB = 100;
 
-function monthLabel(dateStr) {
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function getYearMonth(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return { year: d.getFullYear(), month: d.getMonth() }; // month: 0-11
 }
 
 export default function MonthlyReportsPage() {
@@ -25,6 +30,10 @@ export default function MonthlyReportsPage() {
   const [profileMap, setProfileMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Folder navigation
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [openMonth, setOpenMonth] = useState(null); // 0-11, or null = folder grid
 
   // New report form state
   const [showForm, setShowForm] = useState(false);
@@ -100,6 +109,7 @@ export default function MonthlyReportsPage() {
 
   async function handleClientChange(newClientId) {
     setSelectedClientId(newClientId);
+    setOpenMonth(null);
     setLoading(true);
     await loadReports(newClientId, category);
     setLoading(false);
@@ -143,6 +153,11 @@ export default function MonthlyReportsPage() {
       return;
     }
 
+    // Jump straight to the folder this report landed in.
+    const [yStr, mStr] = reportMonth.split("-");
+    setSelectedYear(parseInt(yStr, 10));
+    setOpenMonth(parseInt(mStr, 10) - 1);
+
     setTitle("");
     setReportMonth("");
     setDescription("");
@@ -166,11 +181,37 @@ export default function MonthlyReportsPage() {
     return supabase.storage.from("chat-attachments").getPublicUrl(storagePath).data.publicUrl;
   }
 
+  function openAddForm(prefillMonthIndex) {
+    if (prefillMonthIndex != null) {
+      const mm = String(prefillMonthIndex + 1).padStart(2, "0");
+      setReportMonth(`${selectedYear}-${mm}`);
+    }
+    setShowForm(true);
+  }
+
+  // ---- Derived: years present in the data (plus the current year) ----
+  const availableYears = useMemo(() => {
+    const years = new Set([new Date().getFullYear()]);
+    reports.forEach((r) => years.add(getYearMonth(r.report_month).year));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [reports]);
+
+  // ---- Derived: reports grouped by month for the selected year ----
+  const reportsByMonth = useMemo(() => {
+    const grouped = Array.from({ length: 12 }, () => []);
+    reports.forEach((r) => {
+      const { year, month } = getYearMonth(r.report_month);
+      if (year === selectedYear) grouped[month].push(r);
+    });
+    return grouped;
+  }, [reports, selectedYear]);
+
   if (!checked || loading) {
     return <main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>;
   }
 
   const isStaffOrAgency = category === "agency" || category === "staff";
+  const monthReports = openMonth != null ? reportsByMonth[openMonth] : [];
 
   return (
     <main className="px-6 py-10">
@@ -206,158 +247,231 @@ export default function MonthlyReportsPage() {
           <p className="text-sm text-slate-400">No clients to report on yet.</p>
         )}
 
-        {isStaffOrAgency && selectedClientId && (
-          <div className="mb-6">
-            {!showForm ? (
+        {(category !== "client" || clientId) && (
+          <>
+            {/* Year switcher */}
+            <div className="flex items-center gap-3 mb-4">
               <button
-                onClick={() => setShowForm(true)}
-                className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
+                onClick={() => setSelectedYear((y) => y - 1)}
+                className="text-slate-400 hover:text-brand px-2"
               >
-                + Add Monthly Report
+                ←
               </button>
-            ) : (
-              <form
-                onSubmit={handleSubmitReport}
-                className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3"
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                className="border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium"
               >
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Title *</label>
-                  <input
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. SEO & Social Media Performance"
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Month *</label>
-                  <input
-                    type="month"
-                    required
-                    value={reportMonth}
-                    onChange={(e) => setReportMonth(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Summary</label>
-                  <textarea
-                    rows={4}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What was done this month..."
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
-                    Attach File (optional)
-                  </label>
-                  <input
-                    type="file"
-                    onChange={(e) => {
-                      const selected = e.target.files?.[0] || null;
-                      if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                        setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
-                        e.target.value = "";
-                        return;
-                      }
-                      setError("");
-                      setFile(selected);
-                    }}
-                    className="text-sm"
-                  />
-                </div>
-
-                {error && <p className="text-sm text-red-600">{error}</p>}
-
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-60"
-                  >
-                    {submitting ? "Submitting..." : "Submit Report"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 rounded-md border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {error && !showForm && <p className="text-sm text-red-600 mb-4">{error}</p>}
-
-        <div className="space-y-3">
-          {reports.length === 0 && (
-            <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-slate-400 text-sm">
-              No reports yet.
+                {availableYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setSelectedYear((y) => y + 1)}
+                className="text-slate-400 hover:text-brand px-2"
+              >
+                →
+              </button>
             </div>
-          )}
 
-          {reports.map((r) => {
-            const isDeleted = !!r.deleted_at;
-            return (
-              <div
-                key={r.id}
-                className={`bg-white border rounded-lg p-4 shadow-sm ${
-                  isDeleted ? "border-red-200 opacity-70" : "border-slate-200"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-slate-800">
-                      {r.title}
-                      {isDeleted && (
-                        <span className="ml-2 text-xs text-red-500 font-normal">(Deleted)</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-400">{monthLabel(r.report_month)}</p>
-                  </div>
-                  {isStaffOrAgency && !isDeleted && (
+            {openMonth === null ? (
+              // ---- Folder grid: one "folder" per month ----
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {MONTH_NAMES.map((name, idx) => {
+                  const count = reportsByMonth[idx].filter((r) => !r.deleted_at || isStaffOrAgency).length;
+                  return (
                     <button
-                      onClick={() => handleDelete(r.id)}
-                      className="text-xs text-red-500 hover:underline flex-shrink-0"
+                      key={name}
+                      onClick={() => setOpenMonth(idx)}
+                      className="bg-white border border-slate-200 rounded-lg p-4 text-left shadow-sm hover:border-brand hover:shadow transition"
                     >
-                      Delete
+                      <p className="text-2xl mb-1">📁</p>
+                      <p className="text-sm font-medium text-slate-800">{name}</p>
+                      <p className="text-xs text-slate-400">
+                        {count} report{count === 1 ? "" : "s"}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              // ---- Inside a month folder ----
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setOpenMonth(null)}
+                    className="text-sm text-slate-500 hover:underline"
+                  >
+                    ← All months ({selectedYear})
+                  </button>
+                  <h2 className="text-sm font-semibold text-slate-600">
+                    📁 {MONTH_NAMES[openMonth]} {selectedYear}
+                  </h2>
+                  {isStaffOrAgency && (
+                    <button
+                      onClick={() => openAddForm(openMonth)}
+                      className="text-xs px-3 py-1.5 rounded-md bg-brand text-white font-medium hover:bg-brand-light transition"
+                    >
+                      + Add Report
                     </button>
                   )}
                 </div>
 
-                {r.description && (
-                  <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{r.description}</p>
+                {monthReports.length === 0 && (
+                  <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-slate-400 text-sm">
+                    No reports for {MONTH_NAMES[openMonth]} {selectedYear} yet.
+                  </div>
                 )}
 
-                {r.storage_path && !isDeleted && (
-                  <a
-                    href={fileUrl(r.storage_path)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-brand underline block mt-2"
-                  >
-                    📎 {r.file_name}
-                  </a>
-                )}
+                <div className="space-y-3">
+                  {monthReports.map((r) => {
+                    const isDeleted = !!r.deleted_at;
+                    return (
+                      <div
+                        key={r.id}
+                        className={`bg-white border rounded-lg p-4 shadow-sm ${
+                          isDeleted ? "border-red-200 opacity-70" : "border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-slate-800">
+                            {r.title}
+                            {isDeleted && (
+                              <span className="ml-2 text-xs text-red-500 font-normal">(Deleted)</span>
+                            )}
+                          </p>
+                          {isStaffOrAgency && !isDeleted && (
+                            <button
+                              onClick={() => handleDelete(r.id)}
+                              className="text-xs text-red-500 hover:underline flex-shrink-0"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
 
-                {isStaffOrAgency && (
-                  <p className="text-xs text-slate-400 mt-2">
-                    Submitted by {profileMap[r.created_by] || "Unknown"}
-                    {isDeleted && r.deleted_by && (
-                      <> · Deleted by {profileMap[r.deleted_by] || "Unknown"}</>
-                    )}
-                  </p>
-                )}
+                        {r.description && (
+                          <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{r.description}</p>
+                        )}
+
+                        {r.storage_path && !isDeleted && (
+                          <a
+                            href={fileUrl(r.storage_path)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-brand underline block mt-2"
+                          >
+                            📎 {r.file_name}
+                          </a>
+                        )}
+
+                        {isStaffOrAgency && (
+                          <p className="text-xs text-slate-400 mt-2">
+                            Submitted by {profileMap[r.created_by] || "Unknown"}
+                            {isDeleted && r.deleted_by && (
+                              <> · Deleted by {profileMap[r.deleted_by] || "Unknown"}</>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </>
+        )}
+
+        {showForm && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-40 px-4">
+            <form
+              onSubmit={handleSubmitReport}
+              className="bg-white border border-slate-200 rounded-lg p-5 shadow-lg space-y-3 w-full max-w-md"
+            >
+              <h3 className="text-sm font-semibold text-slate-700">New Monthly Report</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Title *</label>
+                <input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. SEO & Social Media Performance"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Month *</label>
+                <input
+                  type="month"
+                  required
+                  value={reportMonth}
+                  onChange={(e) => setReportMonth(e.target.value)}
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Summary</label>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What was done this month..."
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">
+                  Attach File (optional)
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0] || null;
+                    if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                      setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
+                      e.target.value = "";
+                      return;
+                    }
+                    setError("");
+                    setFile(selected);
+                  }}
+                  className="text-sm"
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-60"
+                >
+                  {submitting ? "Submitting..." : "Submit Report"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 rounded-md border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {isStaffOrAgency && openMonth === null && selectedClientId && (
+          <button
+            onClick={() => openAddForm(null)}
+            className="mt-4 px-4 py-2 rounded-md border border-brand text-brand text-sm font-medium hover:bg-slate-100 transition"
+          >
+            + Add Monthly Report
+          </button>
+        )}
       </div>
     </main>
   );
