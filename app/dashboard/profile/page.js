@@ -42,6 +42,7 @@ export default function ProfilePage() {
 
   // Password change
   const [oldPassword, setOldPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
@@ -243,9 +244,10 @@ export default function ProfilePage() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setPasswordError("");
 
     if (!oldPassword) {
-      setError("Enter your current password.");
+      setPasswordError("Enter your current password.");
       return;
     }
     if (newPassword.length < 8) {
@@ -253,7 +255,7 @@ export default function ProfilePage() {
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("Passwords don't match.");
+      setError("New password and confirm password don't match.");
       return;
     }
 
@@ -267,7 +269,7 @@ export default function ProfilePage() {
     });
     if (verifyError) {
       setSavingPassword(false);
-      setError("Current password is incorrect.");
+      setPasswordError("Current Password does not match.");
       return;
     }
 
@@ -568,9 +570,15 @@ export default function ProfilePage() {
             <input
               type="password"
               value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+              onChange={(e) => {
+                setOldPassword(e.target.value);
+                if (passwordError) setPasswordError("");
+              }}
+              className={`w-full border rounded-md px-3 py-2 text-sm ${
+                passwordError ? "border-red-400" : "border-slate-300"
+              }`}
             />
+            {passwordError && <p className="text-xs text-red-600 mt-1">{passwordError}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">New Password</label>
