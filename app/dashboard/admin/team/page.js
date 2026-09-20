@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import ChatWidget from "@/components/ChatWidget";
+import StaffChat from "@/components/StaffChat";
 
 const ROLE_LABEL = {
   super_admin: "Owner",
@@ -17,6 +19,8 @@ export default function TeamListPage() {
   const { checked, allowed, user } = useRequireRole(AGENCY_ROLES);
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [organizationId, setOrganizationId] = useState(null);
+  const [dmUser, setDmUser] = useState(null);
 
   useEffect(() => {
     if (!checked || !allowed) return;
@@ -28,7 +32,14 @@ export default function TeamListPage() {
         setTeam(data || []);
         setLoading(false);
       });
-  }, [checked, allowed]);
+
+    supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => setOrganizationId(data?.organization_id || null));
+  }, [checked, allowed, user]);
 
   if (!checked) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
@@ -82,18 +93,37 @@ export default function TeamListPage() {
                 <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
                   {initials(m.full_name)}
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-slate-800 text-sm">
                     {m.full_name || "Unnamed"}
                     {m.id === user?.id && <span className="text-slate-400"> (you)</span>}
                   </p>
                   <p className="text-xs text-slate-400">{ROLE_LABEL[m.role] || m.role}</p>
                 </div>
+                {m.id !== user?.id && (
+                  <button
+                    onClick={() => setDmUser(m)}
+                    className="text-xs text-purple-600 hover:underline flex-shrink-0"
+                  >
+                    💬 Message
+                  </button>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {dmUser && organizationId && (
+        <ChatWidget
+          title={`💬 ${dmUser.full_name || "Unnamed"}`}
+          open={true}
+          onToggle={() => setDmUser(null)}
+          onClose={() => setDmUser(null)}
+        >
+          <StaffChat currentUser={user} otherUserId={dmUser.id} organizationId={organizationId} />
+        </ChatWidget>
+      )}
     </main>
   );
 }

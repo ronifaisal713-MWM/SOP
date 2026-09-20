@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import ClientChat from "@/components/ClientChat";
+import StaffChat from "@/components/StaffChat";
 
 const NAV_BY_CATEGORY = {
   agency: [
@@ -41,6 +42,10 @@ function DashboardLayoutInner({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [clientId, setClientId] = useState(null);
+  const [organizationId, setOrganizationId] = useState(null);
+  const [owners, setOwners] = useState([]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [staffDmOpen, setStaffDmOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -77,6 +82,28 @@ function DashboardLayoutInner({ children }) {
           .eq("id", sessionUser.id)
           .maybeSingle();
         if (isMounted) setClientId(clientUser?.client_id || null);
+      }
+
+      if (cat === "staff") {
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", sessionUser.id)
+          .single();
+        const orgId = myProfile?.organization_id || null;
+        if (isMounted) setOrganizationId(orgId);
+
+        if (orgId) {
+          const { data: ownerRows } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .eq("organization_id", orgId)
+            .in("role", ["super_admin", "admin"]);
+          if (isMounted) {
+            setOwners(ownerRows || []);
+            setSelectedOwnerId(ownerRows?.[0]?.id || "");
+          }
+        }
       }
 
       const { data: notifs } = await supabase
@@ -212,6 +239,49 @@ function DashboardLayoutInner({ children }) {
             initialTab={searchParams.get("tab") || "public"}
             embedded
           />
+        </ChatWidget>
+      )}
+
+      {/* Staff can message the agency owner/admin privately -- but never
+          another staff member. If there's more than one owner/admin, a
+          small picker in the popup header lets them choose which one. */}
+      {checked && category === "staff" && organizationId && owners.length > 0 && (
+        <ChatWidget
+          title={
+            owners.length === 1
+              ? `💬 ${owners[0].full_name || "Owner"}`
+              : "💬 Message Owner/Admin"
+          }
+          open={staffDmOpen}
+          onToggle={() => setStaffDmOpen((o) => !o)}
+          onClose={() => setStaffDmOpen(false)}
+        >
+          <div className="flex flex-col h-full">
+            {owners.length > 1 && (
+              <div className="px-3 py-2 border-b border-slate-100">
+                <select
+                  value={selectedOwnerId}
+                  onChange={(e) => setSelectedOwnerId(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-md px-2 py-1 bg-slate-50"
+                >
+                  {owners.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.full_name || "Unnamed"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {selectedOwnerId && (
+              <div className="flex-1 min-h-0">
+                <StaffChat
+                  currentUser={user}
+                  otherUserId={selectedOwnerId}
+                  organizationId={organizationId}
+                />
+              </div>
+            )}
+          </div>
         </ChatWidget>
       )}
     </div>
