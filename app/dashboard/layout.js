@@ -290,6 +290,13 @@ function DashboardLayoutInner({ children }) {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 15));
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setNotifications((prev) => prev.map((n) => (n.id === payload.new.id ? payload.new : n)));
+        }
+      )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -348,6 +355,7 @@ function DashboardLayoutInner({ children }) {
           isPlatformOwner={isPlatformOwner}
           showPlatformSwitch={effectiveCategory === "agency"}
           showAgencySwitch={effectiveCategory === "platform" && category === "agency"}
+          notifications={notifications}
         />
       )}
 
@@ -506,6 +514,12 @@ function DashboardLayoutInner({ children }) {
         >
           {mobilePrimary.map((item) => {
             const active = pathname === item.href;
+            const badge =
+              item.label !== "Home"
+                ? notifications.filter(
+                    (n) => !n.is_read && n.link && (n.link === item.href || n.link.startsWith(item.href + "/"))
+                  ).length
+                : 0;
             return (
               <a
                 key={item.href}
@@ -514,7 +528,14 @@ function DashboardLayoutInner({ children }) {
                   active ? "text-brand font-medium" : "text-slate-500"
                 }`}
               >
-                <span className="text-lg leading-none">{item.icon}</span>
+                <span className="text-lg leading-none relative">
+                  {item.icon}
+                  {badge > 0 && (
+                    <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[8px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </span>
                 {item.label}
               </a>
             );

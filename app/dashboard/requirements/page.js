@@ -21,7 +21,7 @@ const STATUS_STYLES = {
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 
 export default function RequirementsListPage() {
-  const { checked } = useRequireAuth();
+  const { user, checked } = useRequireAuth();
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +41,19 @@ export default function RequirementsListPage() {
         }
         setLoading(false);
       });
-  }, [checked]);
+
+    // Visiting this list is exactly "seeing there's a new requirement" --
+    // clear the sidebar/tab badge for it without waiting for the bell.
+    if (user) {
+      supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .ilike("link", "/dashboard/requirements%")
+        .then(() => {});
+    }
+  }, [checked, user]);
 
   if (!checked) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;

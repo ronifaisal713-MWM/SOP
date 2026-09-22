@@ -184,6 +184,22 @@ export default function RequirementDetailPage() {
       return;
     }
 
+    // The task (if this requirement was already converted) got a
+    // one-time copy of title/description/priority/deadline at
+    // conversion time -- keep it in sync so "Details" doesn't show
+    // stale info after an edit here.
+    if (task) {
+      await supabase
+        .from("tasks")
+        .update({
+          title: form.title,
+          description: form.description || null,
+          priority: form.priority,
+          deadline: form.deadline || null,
+        })
+        .eq("id", task.id);
+    }
+
     setEditing(false);
     loadData();
   }

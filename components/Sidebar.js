@@ -24,6 +24,7 @@ export default function Sidebar({
   isPlatformOwner,
   showPlatformSwitch,
   showAgencySwitch,
+  notifications,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -45,6 +46,15 @@ export default function Sidebar({
       }
       return next;
     });
+  }
+
+  // "Dashboard"/"Home" is every category's landing page, and would
+  // match almost any notification link by prefix -- never badge it.
+  function badgeCountFor(item) {
+    if (!notifications || item.label === "Dashboard") return 0;
+    return notifications.filter(
+      (n) => !n.is_read && n.link && (n.link === item.href || n.link.startsWith(item.href + "/"))
+    ).length;
   }
 
   return (
@@ -74,19 +84,30 @@ export default function Sidebar({
             )}
             {sec.items.map((item) => {
               const active = pathname === item.href;
+              const badge = badgeCountFor(item);
               return (
                 <a
                   key={item.href}
                   href={item.href}
                   title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 px-4 py-2 text-sm transition border-l-2 ${
+                  className={`flex items-center gap-3 px-4 py-2 text-sm transition border-l-2 relative ${
                     active
                       ? "bg-white/10 text-white border-brand-light"
                       : "text-slate-300 hover:bg-white/5 hover:text-white border-transparent"
                   }`}
                 >
-                  <span className="text-base leading-none flex-shrink-0">{item.icon}</span>
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  <span className="text-base leading-none flex-shrink-0 relative">
+                    {item.icon}
+                    {badge > 0 && collapsed && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                  </span>
+                  {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+                  {!collapsed && badge > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 flex-shrink-0">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
                 </a>
               );
             })}
