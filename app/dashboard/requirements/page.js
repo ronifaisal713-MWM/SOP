@@ -83,10 +83,15 @@ export default function RequirementsListPage() {
                 <div
                   key={r.id}
                   onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
-                  className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm cursor-pointer active:bg-slate-50"
+                  className={`bg-white border rounded-lg p-4 shadow-sm cursor-pointer active:bg-slate-50 ${
+                    r.deleted_at ? "border-red-200 opacity-75" : "border-slate-200"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-slate-800">{r.title}</p>
+                    <p className="font-medium text-slate-800">
+                      {r.title}
+                      {r.deleted_at && <span className="ml-2 text-xs text-red-500 font-normal">(Deleted)</span>}
+                    </p>
                     <span
                       className={`flex-shrink-0 px-2 py-1 rounded-full text-xs font-medium ${
                         STATUS_STYLES[r.status] || "bg-slate-100 text-slate-600"
@@ -125,9 +130,14 @@ export default function RequirementsListPage() {
                     <tr
                       key={r.id}
                       onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
-                      className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+                      className={`border-t border-slate-100 cursor-pointer hover:bg-slate-50 ${
+                        r.deleted_at ? "opacity-60" : ""
+                      }`}
                     >
-                      <td className="px-4 py-3 font-medium text-slate-800">{r.title}</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {r.title}
+                        {r.deleted_at && <span className="ml-2 text-xs text-red-500 font-normal">(Deleted)</span>}
+                      </td>
                       <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{r.category || "-"}</td>
                       <td className="px-4 py-3">

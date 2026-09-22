@@ -35,6 +35,7 @@ export default function TaskDetailPage() {
   const { id } = params;
 
   const [task, setTask] = useState(null);
+  const [requirementFile, setRequirementFile] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
   const [team, setTeam] = useState([]);
   const [assignees, setAssignees] = useState([]);
@@ -67,6 +68,17 @@ export default function TaskDetailPage() {
       return;
     }
     setTask(taskData);
+
+    if (taskData.requirement_id) {
+      const { data: reqData } = await supabase
+        .from("requirements")
+        .select("storage_path, file_name")
+        .eq("id", taskData.requirement_id)
+        .maybeSingle();
+      if (reqData?.storage_path) {
+        setRequirementFile(reqData);
+      }
+    }
 
     if (staff) {
       const { data: teamData } = await supabase
@@ -177,6 +189,17 @@ export default function TaskDetailPage() {
 
           {task.description && (
             <p className="text-sm text-slate-700 mt-3 whitespace-pre-wrap">{task.description}</p>
+          )}
+
+          {requirementFile?.storage_path && (
+            <a
+              href={supabase.storage.from("chat-attachments").getPublicUrl(requirementFile.storage_path).data.publicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-brand underline block mt-2"
+            >
+              📎 {requirementFile.file_name} (from Requirement)
+            </a>
           )}
 
           {/* ---------- Assignees (multiple people can work on one task) ---------- */}
