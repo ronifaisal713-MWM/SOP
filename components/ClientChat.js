@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { categoryForRole, ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import { categoryForRole, ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -71,6 +71,7 @@ export default function ClientChat({
   const [error, setError] = useState("");
 
   const [team, setTeam] = useState([]);
+  const [senderRoleMap, setSenderRoleMap] = useState({});
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionTarget, setMentionTarget] = useState(null);
 
@@ -99,7 +100,17 @@ export default function ClientChat({
 
     const { data, error: fetchError } = await query;
     if (fetchError) setError(fetchError.message);
-    setMessages(data || []);
+    const rows = data || [];
+    setMessages(rows);
+
+    const senderIds = [...new Set(rows.map((m) => m.sender_id).filter(Boolean))];
+    if (senderIds.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("id, role").in("id", senderIds);
+      const map = {};
+      (profiles || []).forEach((p) => (map[p.id] = p.role));
+      setSenderRoleMap(map);
+    }
+
     setLoading(false);
   }
 
@@ -302,6 +313,15 @@ export default function ClientChat({
                     : "bg-slate-100 text-slate-800"
                 }`}
               >
+                {tab === "public" && AGENCY_ROLES.includes(senderRoleMap[m.sender_id]) && (
+                  <p
+                    className={`text-[10px] font-semibold mb-0.5 ${
+                      isMine ? "text-white/90" : "text-purple-600"
+                    }`}
+                  >
+                    👑 Owner
+                  </p>
+                )}
                 {m.body && <p className="whitespace-pre-wrap">{linkify(m.body)}</p>}
                 {m.files && (
                   <a

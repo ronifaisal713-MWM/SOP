@@ -38,7 +38,7 @@ export default function ReportsPage() {
     // Tasks, with their requirement's client_id embedded.
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, status, assigned_to, created_at, updated_at, requirements(client_id)");
+      .select("id, status, created_at, updated_at, requirements(client_id)");
 
     const { data: requirements } = await supabase
       .from("requirements")
@@ -78,12 +78,21 @@ export default function ReportsPage() {
       const teamMap = {};
       (team || []).forEach((m) => (teamMap[m.id] = m.full_name));
 
+      const taskStatusMap = {};
+      (tasks || []).forEach((t) => (taskStatusMap[t.id] = t.status));
+
+      const taskIds = (tasks || []).map((t) => t.id);
+      const { data: assigneeRows } =
+        taskIds.length > 0
+          ? await supabase.from("task_assignees").select("task_id, user_id").in("task_id", taskIds)
+          : { data: [] };
+
       const byMember = {};
-      (tasks || []).forEach((t) => {
-        if (!t.assigned_to) return;
-        if (!byMember[t.assigned_to]) byMember[t.assigned_to] = { total: 0, completed: 0 };
-        byMember[t.assigned_to].total += 1;
-        if (t.status === "done" || t.status === "approved") byMember[t.assigned_to].completed += 1;
+      (assigneeRows || []).forEach((row) => {
+        const status = taskStatusMap[row.task_id];
+        if (!byMember[row.user_id]) byMember[row.user_id] = { total: 0, completed: 0 };
+        byMember[row.user_id].total += 1;
+        if (status === "done" || status === "approved") byMember[row.user_id].completed += 1;
       });
       setTeamRows(
         Object.entries(byMember)

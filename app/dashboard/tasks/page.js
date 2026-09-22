@@ -30,13 +30,35 @@ function initials(name) {
     .toUpperCase();
 }
 
-function Avatar({ name }) {
+function AvatarStack({ names }) {
+  if (!names || names.length === 0) {
+    return (
+      <div
+        title="Unassigned"
+        className="w-5 h-5 rounded-full bg-slate-300 text-white flex items-center justify-center text-[9px] font-semibold flex-shrink-0"
+      >
+        ?
+      </div>
+    );
+  }
+  const shown = names.slice(0, 3);
+  const overflow = names.length - shown.length;
   return (
-    <div
-      title={name || "Unassigned"}
-      className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[9px] font-semibold flex-shrink-0"
-    >
-      {initials(name)}
+    <div className="flex items-center -space-x-1.5 flex-shrink-0">
+      {shown.map((name, i) => (
+        <div
+          key={i}
+          title={name}
+          className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[9px] font-semibold border-2 border-white"
+        >
+          {initials(name)}
+        </div>
+      ))}
+      {overflow > 0 && (
+        <div className="w-5 h-5 rounded-full bg-slate-300 text-white flex items-center justify-center text-[8px] font-semibold border-2 border-white">
+          +{overflow}
+        </div>
+      )}
     </div>
   );
 }
@@ -45,6 +67,7 @@ export default function TasksKanbanPage() {
   const { checked, allowed, user, role } = useRequireRole(ALL_STAFF_ROLES);
   const [tasks, setTasks] = useState([]);
   const [profileMap, setProfileMap] = useState({});
+  const [assigneesByTask, setAssigneesByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openChatTask, setOpenChatTask] = useState(null);
@@ -66,15 +89,32 @@ export default function TasksKanbanPage() {
     const taskList = data || [];
     setTasks(taskList);
 
-    const assigneeIds = [...new Set(taskList.map((t) => t.assigned_to).filter(Boolean))];
-    if (assigneeIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", assigneeIds);
-      const map = {};
-      (profiles || []).forEach((p) => (map[p.id] = p.full_name));
-      setProfileMap(map);
+    const taskIds = taskList.map((t) => t.id);
+    if (taskIds.length > 0) {
+      const { data: assigneeRows } = await supabase
+        .from("task_assignees")
+        .select("task_id, user_id")
+        .in("task_id", taskIds);
+
+      const rows = assigneeRows || [];
+      const userIds = [...new Set(rows.map((r) => r.user_id))];
+
+      let map = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        (profiles || []).forEach((p) => (map[p.id] = p.full_name));
+        setProfileMap(map);
+      }
+
+      const byTask = {};
+      rows.forEach((r) => {
+        if (!byTask[r.task_id]) byTask[r.task_id] = [];
+        byTask[r.task_id].push(map[r.user_id] || "Unnamed");
+      });
+      setAssigneesByTask(byTask);
     }
 
     setLoading(false);
@@ -140,11 +180,13 @@ export default function TasksKanbanPage() {
                       className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm text-sm"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Avatar name={profileMap[t.assigned_to]} />
+                        <AvatarStack names={assigneesByTask[t.id]} />
                         <p className="font-medium text-slate-800 flex-1">{t.title}</p>
                       </div>
-                      <p className="text-slate-400 text-xs mb-1">
-                        {profileMap[t.assigned_to] || "Unassigned"}
+                      <p className="text-slate-400 text-xs mb-1 truncate">
+                        {assigneesByTask[t.id]?.length > 0
+                          ? assigneesByTask[t.id].join(", ")
+                          : "Unassigned"}
                       </p>
                       <p className="text-slate-400 text-xs mb-2">
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}

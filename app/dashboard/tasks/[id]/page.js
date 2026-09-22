@@ -19,6 +19,16 @@ const STATUS_OPTIONS = [
   "done",
 ];
 
+function initials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export default function TaskDetailPage() {
   const { user, checked } = useRequireAuth();
   const params = useParams();
@@ -27,7 +37,8 @@ export default function TaskDetailPage() {
   const [task, setTask] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
   const [team, setTeam] = useState([]);
-  const [assigneeName, setAssigneeName] = useState(null);
+  const [assignees, setAssignees] = useState([]);
+  const [addAssigneeId, setAddAssigneeId] = useState("");
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,19 +76,21 @@ export default function TaskDetailPage() {
       setTeam(teamData || []);
     }
 
-    if (taskData.assigned_to) {
-      const { data: assignee } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", taskData.assigned_to)
-        .maybeSingle();
-      setAssigneeName(assignee?.full_name || null);
-    } else {
-      setAssigneeName(null);
-    }
+    await loadAssignees();
 
     setLoading(false);
     loadHistory();
+  }
+
+  async function loadAssignees() {
+    const { data: rows } = await supabase.from("task_assignees").select("user_id").eq("task_id", id);
+    const ids = (rows || []).map((r) => r.user_id);
+    if (ids.length === 0) {
+      setAssignees([]);
+      return;
+    }
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+    setAssignees(profiles || []);
   }
 
   async function loadHistory() {
@@ -112,13 +125,16 @@ export default function TaskDetailPage() {
     loadHistory();
   }
 
-  async function assignTask(newAssigneeId) {
-    setTask((t) => ({ ...t, assigned_to: newAssigneeId || null }));
-    setAssigneeName(team.find((m) => m.id === newAssigneeId)?.full_name || null);
-    await supabase
-      .from("tasks")
-      .update({ assigned_to: newAssigneeId || null })
-      .eq("id", id);
+  async function handleAddAssignee() {
+    if (!addAssigneeId) return;
+    await supabase.from("task_assignees").insert({ task_id: id, user_id: addAssigneeId });
+    setAddAssigneeId("");
+    loadAssignees();
+  }
+
+  async function handleRemoveAssignee(userId) {
+    await supabase.from("task_assignees").delete().eq("task_id", id).eq("user_id", userId);
+    loadAssignees();
   }
 
   if (!checked || loading) {
@@ -136,6 +152,8 @@ export default function TaskDetailPage() {
       </main>
     );
   }
+
+  const assignableTeam = team.filter((m) => !assignees.some((a) => a.id === m.id));
 
   return (
     <main className="px-6 py-10">
@@ -161,32 +179,54 @@ export default function TaskDetailPage() {
             <p className="text-sm text-slate-700 mt-3 whitespace-pre-wrap">{task.description}</p>
           )}
 
-          <div className="mt-4 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
-              {assigneeName
-                ? assigneeName
-                    .split(" ")
-                    .map((p) => p[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()
-                : "?"}
+          {/* ---------- Assignees (multiple people can work on one task) ---------- */}
+          <div className="mt-4">
+            <p className="text-xs text-slate-400 mb-1">Assigned to</p>
+            <div className="flex flex-wrap gap-2">
+              {assignees.length === 0 && <p className="text-sm text-slate-400">Unassigned</p>}
+              {assignees.map((a) => (
+                <span
+                  key={a.id}
+                  className="flex items-center gap-1.5 bg-slate-100 rounded-full pl-1 pr-2 py-1"
+                >
+                  <span className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[9px] font-semibold">
+                    {initials(a.full_name)}
+                  </span>
+                  <span className="text-xs text-slate-700">{a.full_name || "Unnamed"}</span>
+                  {isStaff && (
+                    <button
+                      onClick={() => handleRemoveAssignee(a.id)}
+                      className="text-slate-400 hover:text-red-500 text-xs ml-0.5"
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
             </div>
-            {isStaff ? (
-              <select
-                value={task.assigned_to || ""}
-                onChange={(e) => assignTask(e.target.value)}
-                className="border border-slate-200 rounded-md text-sm px-2 py-1 bg-slate-50"
-              >
-                <option value="">Unassigned</option>
-                {team.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.full_name || "Unnamed"}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-sm text-slate-600">{assigneeName || "Unassigned"}</p>
+
+            {isStaff && assignableTeam.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <select
+                  value={addAssigneeId}
+                  onChange={(e) => setAddAssigneeId(e.target.value)}
+                  className="border border-slate-200 rounded-md text-sm px-2 py-1 bg-slate-50"
+                >
+                  <option value="">Add someone...</option>
+                  {assignableTeam.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name || "Unnamed"}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleAddAssignee}
+                  disabled={!addAssigneeId}
+                  className="text-xs px-3 py-1.5 rounded-md bg-brand text-white font-medium hover:bg-brand-light transition disabled:opacity-50"
+                >
+                  + Add
+                </button>
+              </div>
             )}
           </div>
 
