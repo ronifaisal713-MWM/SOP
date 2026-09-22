@@ -41,7 +41,6 @@ export default function NewRequirementPage() {
     description: "",
     clientId: "",
   });
-  const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -97,33 +96,21 @@ export default function NewRequirementPage() {
 
     setSubmitting(true);
 
-    let storagePath = null;
-    let fileName = null;
-    if (file) {
-      const path = `requirements/${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("chat-attachments").upload(path, file);
-      if (uploadError) {
-        setError(uploadError.message);
-        setSubmitting(false);
-        return;
-      }
-      storagePath = path;
-      fileName = file.name;
-    }
-
-    const { error: insertError } = await supabase.from("requirements").insert({
-      title: form.title,
-      category: form.category,
-      platform: form.platform || null,
-      priority: form.priority,
-      deadline: form.deadline || null,
-      description: form.description || null,
-      created_by: user?.id,
-      client_id: clientId,
-      status: "new",
-      storage_path: storagePath,
-      file_name: fileName,
-    });
+    const { data: newReq, error: insertError } = await supabase
+      .from("requirements")
+      .insert({
+        title: form.title,
+        category: form.category,
+        platform: form.platform || null,
+        priority: form.priority,
+        deadline: form.deadline || null,
+        description: form.description || null,
+        created_by: user?.id,
+        client_id: clientId,
+        status: "new",
+      })
+      .select()
+      .single();
 
     setSubmitting(false);
 
@@ -132,7 +119,7 @@ export default function NewRequirementPage() {
       return;
     }
 
-    router.push("/dashboard/requirements");
+    router.push(`/dashboard/requirements/${newReq.id}`);
   }
 
   if (!checked || roleInfo.loading) {
@@ -259,25 +246,9 @@ export default function NewRequirementPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
-              Attach File (optional)
-            </label>
-            <input
-              type="file"
-              onChange={(e) => {
-                const selected = e.target.files?.[0] || null;
-                if (selected && selected.size > 100 * 1024 * 1024) {
-                  setError("File is too large. Max size is 100MB.");
-                  e.target.value = "";
-                  return;
-                }
-                setError("");
-                setFile(selected);
-              }}
-              className="text-sm"
-            />
-          </div>
+          <p className="text-xs text-slate-400">
+            You can attach documents (up to 10) once this requirement is created.
+          </p>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 

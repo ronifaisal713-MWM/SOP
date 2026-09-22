@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { categoryForRole } from "@/lib/roleCategory";
-
-const MAX_FILE_SIZE_MB = 100;
+import DocumentsManager from "@/components/DocumentsManager";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -40,7 +39,6 @@ export default function MonthlyReportsPage() {
   const [title, setTitle] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [description, setDescription] = useState("");
-  const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -122,27 +120,11 @@ export default function MonthlyReportsPage() {
     setSubmitting(true);
     setError("");
 
-    let storagePath = null;
-    let fileName = null;
-    if (file) {
-      const path = `reports/${selectedClientId}/${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("chat-attachments").upload(path, file);
-      if (uploadError) {
-        setError(uploadError.message);
-        setSubmitting(false);
-        return;
-      }
-      storagePath = path;
-      fileName = file.name;
-    }
-
     const { error: insertError } = await supabase.from("monthly_reports").insert({
       client_id: selectedClientId,
       title: title.trim(),
       report_month: `${reportMonth}-01`,
       description: description.trim() || null,
-      storage_path: storagePath,
-      file_name: fileName,
       created_by: user.id,
     });
 
@@ -161,7 +143,6 @@ export default function MonthlyReportsPage() {
     setTitle("");
     setReportMonth("");
     setDescription("");
-    setFile(null);
     setShowForm(false);
     await loadReports(selectedClientId, category);
   }
@@ -175,10 +156,6 @@ export default function MonthlyReportsPage() {
       .eq("id", reportId);
 
     await loadReports(category === "client" ? clientId : selectedClientId, category);
-  }
-
-  function fileUrl(storagePath) {
-    return supabase.storage.from("chat-attachments").getPublicUrl(storagePath).data.publicUrl;
   }
 
   function openAddForm(prefillMonthIndex) {
@@ -356,21 +333,21 @@ export default function MonthlyReportsPage() {
                           <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{r.description}</p>
                         )}
 
-                        {r.storage_path && !isDeleted && (
-                          <a
-                            href={fileUrl(r.storage_path)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-brand underline block mt-2"
-                          >
-                            📎 {r.file_name}
-                          </a>
-                        )}
-
                         {!r.storage_path && r.file_expired_at && !isDeleted && (
                           <p className="text-xs text-slate-400 mt-2">
                             📎 File expired (14-month retention) — report details above are still kept.
                           </p>
+                        )}
+
+                        {!isDeleted && (
+                          <div className="mt-3 pt-3 border-t border-slate-100">
+                            <DocumentsManager
+                              entityColumn="monthly_report_id"
+                              entityId={r.id}
+                              folder={`reports/${selectedClientId || clientId}`}
+                              canManage={isStaffOrAgency}
+                            />
+                          </div>
                         )}
 
                         {isStaffOrAgency && (
@@ -428,25 +405,10 @@ export default function MonthlyReportsPage() {
                   className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Attach File (optional)
-                </label>
-                <input
-                  type="file"
-                  onChange={(e) => {
-                    const selected = e.target.files?.[0] || null;
-                    if (selected && selected.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                      setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
-                      e.target.value = "";
-                      return;
-                    }
-                    setError("");
-                    setFile(selected);
-                  }}
-                  className="text-sm"
-                />
-              </div>
+
+              <p className="text-xs text-slate-400">
+                You can attach documents (up to 10) once this report is created.
+              </p>
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 

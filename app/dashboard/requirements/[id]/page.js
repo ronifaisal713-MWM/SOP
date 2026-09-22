@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import DocumentsManager from "@/components/DocumentsManager";
 
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 const CATEGORIES = [
@@ -40,7 +41,6 @@ export default function RequirementDetailPage() {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
-  const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
   async function loadData() {
@@ -165,20 +165,6 @@ export default function RequirementDetailPage() {
     setSaving(true);
     setError("");
 
-    let storagePath = requirement.storage_path;
-    let fileName = requirement.file_name;
-    if (file) {
-      const path = `requirements/${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("chat-attachments").upload(path, file);
-      if (uploadError) {
-        setError(uploadError.message);
-        setSaving(false);
-        return;
-      }
-      storagePath = path;
-      fileName = file.name;
-    }
-
     const { error: updateError } = await supabase
       .from("requirements")
       .update({
@@ -188,8 +174,6 @@ export default function RequirementDetailPage() {
         priority: form.priority,
         deadline: form.deadline || null,
         description: form.description || null,
-        storage_path: storagePath,
-        file_name: fileName,
       })
       .eq("id", id);
 
@@ -200,7 +184,6 @@ export default function RequirementDetailPage() {
       return;
     }
 
-    setFile(null);
     setEditing(false);
     loadData();
   }
@@ -214,10 +197,6 @@ export default function RequirementDetailPage() {
       .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
       .eq("id", id);
     router.push("/dashboard/requirements");
-  }
-
-  function fileUrl(storagePath) {
-    return supabase.storage.from("chat-attachments").getPublicUrl(storagePath).data.publicUrl;
   }
 
   if (!checked || loading) {
@@ -285,15 +264,15 @@ export default function RequirementDetailPage() {
               </div>
             )}
 
-            {requirement.storage_path && (
-              <a
-                href={fileUrl(requirement.storage_path)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-brand underline block mt-3"
-              >
-                📎 {requirement.file_name}
-              </a>
+            {!isDeleted && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <DocumentsManager
+                  entityColumn="requirement_id"
+                  entityId={id}
+                  folder={`requirements/${id}`}
+                  canManage={true}
+                />
+              </div>
             )}
 
             {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
@@ -421,28 +400,9 @@ export default function RequirementDetailPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                {requirement.storage_path ? "Replace File" : "Attach File"} (optional)
-              </label>
-              {requirement.storage_path && !file && (
-                <p className="text-xs text-slate-400 mb-1">Current: {requirement.file_name}</p>
-              )}
-              <input
-                type="file"
-                onChange={(e) => {
-                  const selected = e.target.files?.[0] || null;
-                  if (selected && selected.size > 100 * 1024 * 1024) {
-                    setError("File is too large. Max size is 100MB.");
-                    e.target.value = "";
-                    return;
-                  }
-                  setError("");
-                  setFile(selected);
-                }}
-                className="text-sm"
-              />
-            </div>
+            <p className="text-xs text-slate-400">
+              Manage attached documents from the requirement's main view (below Save/Cancel).
+            </p>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -458,7 +418,6 @@ export default function RequirementDetailPage() {
                 type="button"
                 onClick={() => {
                   setEditing(false);
-                  setFile(null);
                   setError("");
                 }}
                 className="px-4 py-2 rounded-md border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100 transition"
