@@ -5,24 +5,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
-const ROLE_LABEL = {
-  super_admin: "Owner",
-  admin: "Admin",
-  project_manager: "Project Manager",
-  team_lead: "Team Lead",
-  employee: "Employee",
-};
-
-function initials(name) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 export default function DashboardPage() {
   const { user, checked } = useRequireAuth();
   const [counts, setCounts] = useState({
@@ -32,8 +14,6 @@ export default function DashboardPage() {
     completed: null,
   });
   const [isStaff, setIsStaff] = useState(false);
-  const [assignedTeam, setAssignedTeam] = useState([]);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     if (!checked || !user) return;
@@ -43,30 +23,7 @@ export default function DashboardPage() {
       .select("role")
       .eq("id", user.id)
       .single()
-      .then(({ data }) => {
-        setIsStaff(!!data?.role && ALL_STAFF_ROLES.includes(data.role));
-        setIsClient(!!data?.role && ["client_admin", "client_user"].includes(data.role));
-      });
-
-    supabase
-      .from("client_users")
-      .select("client_id")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(async ({ data: clientUser }) => {
-        if (!clientUser?.client_id) return;
-        const { data: assignments } = await supabase
-          .from("client_team_members")
-          .select("user_id")
-          .eq("client_id", clientUser.client_id);
-        const staffIds = (assignments || []).map((a) => a.user_id);
-        if (staffIds.length === 0) return;
-        const { data: staffProfiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, role")
-          .in("id", staffIds);
-        setAssignedTeam(staffProfiles || []);
-      });
+      .then(({ data }) => setIsStaff(!!data?.role && ALL_STAFF_ROLES.includes(data.role)));
 
     supabase
       .from("requirements")
@@ -133,31 +90,6 @@ export default function DashboardPage() {
         All four numbers above come directly from Supabase and are scoped to what you have access
         to (your agency's data, your assigned clients, or your own tasks).
       </p>
-
-      {isClient && (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm mt-6 max-w-md">
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">Your Team</h2>
-          {assignedTeam.length === 0 ? (
-            <p className="text-xs text-slate-400">
-              No team members have been assigned to your account yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {assignedTeam.map((m) => (
-                <div key={m.id} className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                    {initials(m.full_name)}
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-700">{m.full_name || "Unnamed"}</p>
-                    <p className="text-xs text-slate-400">{ROLE_LABEL[m.role] || m.role}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </main>
   );
 }

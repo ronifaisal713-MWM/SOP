@@ -66,6 +66,7 @@ const SIDEBAR_BY_CATEGORY = {
         { href: "/dashboard/my-tasks", label: "My Tasks", icon: "📋" },
         { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+        { href: "/dashboard/team", label: "Your Team", icon: "👥" },
       ],
     },
   ],
@@ -99,6 +100,7 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/my-tasks", label: "My Tasks" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/team", label: "Your Team" },
   ],
 };
 
@@ -142,7 +144,7 @@ const MOBILE_MORE_BY_CATEGORY = {
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
   ],
-  client: [],
+  client: [{ href: "/dashboard/team", label: "Your Team" }],
 };
 
 // This layout wraps every /dashboard/* page, so the top bar -- and which

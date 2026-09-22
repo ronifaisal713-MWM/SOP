@@ -8,14 +8,6 @@ import SocialLinksManager from "@/components/SocialLinksManager";
 
 const MAX_IMAGE_SIZE_MB = 5;
 
-const ROLE_LABEL = {
-  super_admin: "Owner",
-  admin: "Admin",
-  project_manager: "Project Manager",
-  team_lead: "Team Lead",
-  employee: "Employee",
-};
-
 function initials(name) {
   if (!name) return "?";
   return name
@@ -68,7 +60,6 @@ export default function ProfilePage() {
 
   // Client/company info
   const [clientId, setClientId] = useState(null);
-  const [assignedTeam, setAssignedTeam] = useState([]);
   const [companyName, setCompanyName] = useState("");
   const [companyLogoUrl, setCompanyLogoUrl] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
@@ -148,19 +139,6 @@ export default function ProfilePage() {
         setIndustry(client?.industry || "");
         setBusinessType(client?.business_type || "");
         setTargetMarket(client?.target_market || "");
-
-        const { data: assignments } = await supabase
-          .from("client_team_members")
-          .select("user_id")
-          .eq("client_id", clientUser.client_id);
-        const staffIds = (assignments || []).map((a) => a.user_id);
-        if (staffIds.length > 0) {
-          const { data: staffProfiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, role")
-            .in("id", staffIds);
-          setAssignedTeam(staffProfiles || []);
-        }
       }
     }
 
@@ -797,34 +775,6 @@ export default function ProfilePage() {
         )}
 
         {category === "client" && clientId && <SocialLinksManager clientId={clientId} />}
-
-        {category === "client" && clientId && (
-          <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-700 mb-3">Your Team</h2>
-            {assignedTeam.length === 0 ? (
-              <p className="text-xs text-slate-400">
-                No team members have been assigned to your account yet.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {assignedTeam.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                      {initials(m.full_name)}
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-700">{m.full_name || "Unnamed"}</p>
-                      <p className="text-xs text-slate-400">{ROLE_LABEL[m.role] || m.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-slate-400 mt-3">
-              You can @mention any of these teammates in chat.
-            </p>
-          </div>
-        )}
 
         {/* ---------- Danger Zone (everyone, not shown to Platform Owner) ---------- */}
         {!isPlatformOwner && (
