@@ -50,7 +50,7 @@ export default function RequirementsListPage() {
   return (
     <main className="px-6 py-10">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-brand">My Requirements</h1>
             <a href="/dashboard" className="text-sm text-slate-500 hover:underline">
@@ -75,46 +75,80 @@ export default function RequirementsListPage() {
         )}
 
         {requirements.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-100 text-slate-500 text-left">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Title</th>
-                  <th className="px-4 py-3 font-medium">Client</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Priority</th>
-                  <th className="px-4 py-3 font-medium">Deadline</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requirements.map((r) => (
-                  <tr
-                    key={r.id}
-                    onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
-                    className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
-                  >
-                    <td className="px-4 py-3 font-medium text-slate-800">{r.title}</td>
-                    <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "-"}</td>
-                    <td className="px-4 py-3 text-slate-500">{r.category || "-"}</td>
-                    <td className="px-4 py-3">
+          <>
+            {/* Mobile: stacked cards (a wide table just overflows/wraps
+                badly on a phone screen) */}
+            <div className="md:hidden space-y-3">
+              {requirements.map((r) => (
+                <div
+                  key={r.id}
+                  onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
+                  className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm cursor-pointer active:bg-slate-50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-slate-800">{r.title}</p>
+                    <span
+                      className={`flex-shrink-0 px-2 py-1 rounded-full text-xs font-medium ${
+                        STATUS_STYLES[r.status] || "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{r.clients?.company_name || "-"}</p>
+                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-2">
+                    <span>{r.category || "-"}</span>
+                    <span>
                       {PRIORITY_ICON[r.priority] || ""} {r.priority}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{r.deadline || "-"}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          STATUS_STYLES[r.status] || "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
+                    </span>
+                    {r.deadline && <span>Due {r.deadline}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-100 text-slate-500 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Title</th>
+                    <th className="px-4 py-3 font-medium">Client</th>
+                    <th className="px-4 py-3 font-medium">Category</th>
+                    <th className="px-4 py-3 font-medium">Priority</th>
+                    <th className="px-4 py-3 font-medium">Deadline</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {requirements.map((r) => (
+                    <tr
+                      key={r.id}
+                      onClick={() => (window.location.href = `/dashboard/requirements/${r.id}`)}
+                      className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-3 font-medium text-slate-800">{r.title}</td>
+                      <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "-"}</td>
+                      <td className="px-4 py-3 text-slate-500">{r.category || "-"}</td>
+                      <td className="px-4 py-3">
+                        {PRIORITY_ICON[r.priority] || ""} {r.priority}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{r.deadline || "-"}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            STATUS_STYLES[r.status] || "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </main>

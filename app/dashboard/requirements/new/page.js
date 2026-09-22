@@ -127,7 +127,7 @@ export default function NewRequirementPage() {
   return (
     <main className="px-6 py-10">
       <div className="max-w-xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <h1 className="text-2xl font-semibold text-brand">New Requirement</h1>
           <a href="/dashboard/requirements" className="text-sm text-slate-500 hover:underline">
             ← Back to list
@@ -176,7 +176,7 @@ export default function NewRequirementPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1">Category</label>
               <select
@@ -204,7 +204,7 @@ export default function NewRequirementPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1">Priority</label>
               <select

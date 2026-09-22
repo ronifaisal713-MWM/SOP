@@ -121,7 +121,7 @@ export default function ReportsPage() {
 
         {!loading && (
           <>
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
                 <p className="text-sm text-slate-500">New Requirements This Month</p>
                 <p className="text-2xl font-bold text-slate-800">{monthly.newRequirements}</p>
@@ -133,66 +133,126 @@ export default function ReportsPage() {
             </div>
 
             <h2 className="text-sm font-semibold text-slate-600 mb-2">By Client</h2>
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm mb-8">
-              {clientRows.length === 0 ? (
+            {clientRows.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-lg shadow-sm mb-8">
                 <p className="text-center text-xs text-slate-300 py-8">No task data yet.</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-100 text-slate-500 text-left">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Client</th>
-                      <th className="px-4 py-3 font-medium">Total Tasks</th>
-                      <th className="px-4 py-3 font-medium">In Progress</th>
-                      <th className="px-4 py-3 font-medium">Pending Approval</th>
-                      <th className="px-4 py-3 font-medium">Completed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clientRows.map((row) => (
-                      <tr key={row.clientId} className="border-t border-slate-100">
-                        <td className="px-4 py-3 font-medium text-slate-800">
-                          <a href={`/dashboard/clients/${row.clientId}`} className="hover:underline">
-                            {row.name}
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">{row.total}</td>
-                        <td className="px-4 py-3 text-slate-600">{row.inProgress}</td>
-                        <td className="px-4 py-3 text-slate-600">{row.pendingApproval}</td>
-                        <td className="px-4 py-3 text-slate-600">{row.completed}</td>
+              </div>
+            ) : (
+              <>
+                {/* Mobile: stacked cards */}
+                <div className="md:hidden space-y-3 mb-8">
+                  {clientRows.map((row) => (
+                    <a
+                      key={row.clientId}
+                      href={`/dashboard/clients/${row.clientId}`}
+                      className="block bg-white border border-slate-200 rounded-lg p-4 shadow-sm"
+                    >
+                      <p className="font-medium text-slate-800">{row.name}</p>
+                      <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{row.total}</p>
+                          <p className="text-[10px] text-slate-400">Total</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{row.inProgress}</p>
+                          <p className="text-[10px] text-slate-400">In Progress</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{row.pendingApproval}</p>
+                          <p className="text-[10px] text-slate-400">Pending</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{row.completed}</p>
+                          <p className="text-[10px] text-slate-400">Done</p>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden md:block bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm mb-8">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-100 text-slate-500 text-left">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Client</th>
+                        <th className="px-4 py-3 font-medium">Total Tasks</th>
+                        <th className="px-4 py-3 font-medium">In Progress</th>
+                        <th className="px-4 py-3 font-medium">Pending Approval</th>
+                        <th className="px-4 py-3 font-medium">Completed</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                    </thead>
+                    <tbody>
+                      {clientRows.map((row) => (
+                        <tr key={row.clientId} className="border-t border-slate-100">
+                          <td className="px-4 py-3 font-medium text-slate-800">
+                            <a href={`/dashboard/clients/${row.clientId}`} className="hover:underline">
+                              {row.name}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">{row.total}</td>
+                          <td className="px-4 py-3 text-slate-600">{row.inProgress}</td>
+                          <td className="px-4 py-3 text-slate-600">{row.pendingApproval}</td>
+                          <td className="px-4 py-3 text-slate-600">{row.completed}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
             {isAgency && (
               <>
                 <h2 className="text-sm font-semibold text-slate-600 mb-2">By Team Member</h2>
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                  {teamRows.length === 0 ? (
+                {teamRows.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
                     <p className="text-center text-xs text-slate-300 py-8">No assigned tasks yet.</p>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-100 text-slate-500 text-left">
-                        <tr>
-                          <th className="px-4 py-3 font-medium">Team Member</th>
-                          <th className="px-4 py-3 font-medium">Assigned</th>
-                          <th className="px-4 py-3 font-medium">Completed</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {teamRows.map((row) => (
-                          <tr key={row.userId} className="border-t border-slate-100">
-                            <td className="px-4 py-3 font-medium text-slate-800">{row.name}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.total}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.completed}</td>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile: stacked cards */}
+                    <div className="md:hidden space-y-3">
+                      {teamRows.map((row) => (
+                        <div key={row.userId} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                          <p className="font-medium text-slate-800">{row.name}</p>
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-center">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700">{row.total}</p>
+                              <p className="text-[10px] text-slate-400">Assigned</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700">{row.completed}</p>
+                              <p className="text-[10px] text-slate-400">Completed</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop: table */}
+                    <div className="hidden md:block bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 text-slate-500 text-left">
+                          <tr>
+                            <th className="px-4 py-3 font-medium">Team Member</th>
+                            <th className="px-4 py-3 font-medium">Assigned</th>
+                            <th className="px-4 py-3 font-medium">Completed</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                        </thead>
+                        <tbody>
+                          {teamRows.map((row) => (
+                            <tr key={row.userId} className="border-t border-slate-100">
+                              <td className="px-4 py-3 font-medium text-slate-800">{row.name}</td>
+                              <td className="px-4 py-3 text-slate-600">{row.total}</td>
+                              <td className="px-4 py-3 text-slate-600">{row.completed}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </>

@@ -78,7 +78,7 @@ export default function NewTeamMemberPage() {
   return (
     <main className="px-6 py-10">
       <div className="max-w-xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <h1 className="text-2xl font-semibold text-brand">Add Team Member</h1>
           <a href="/dashboard/admin/team" className="text-sm text-slate-500 hover:underline">
             ← Team list
