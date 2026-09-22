@@ -322,10 +322,18 @@ function DashboardLayoutInner({ children }) {
     }
   }
 
-  const navItems = NAV_BY_CATEGORY[category] || [];
-  const sidebarSections = SIDEBAR_BY_CATEGORY[category] || [];
-  const mobilePrimary = MOBILE_PRIMARY_BY_CATEGORY[category] || [];
-  const mobileMore = MOBILE_MORE_BY_CATEGORY[category] || [];
+  // The sidebar/nav should reflect which SECTION of the app is being
+  // browsed, not just the account's underlying role -- an account that
+  // is both an Agency owner and the Platform Owner (is_platform_owner)
+  // keeps role = 'super_admin' the whole time, so category alone can't
+  // tell /dashboard/platform/* apart from the agency's own pages.
+  const isOnPlatformSection = pathname?.startsWith("/dashboard/platform");
+  const effectiveCategory = isPlatformOwner && isOnPlatformSection ? "platform" : category;
+
+  const navItems = NAV_BY_CATEGORY[effectiveCategory] || [];
+  const sidebarSections = SIDEBAR_BY_CATEGORY[effectiveCategory] || [];
+  const mobilePrimary = MOBILE_PRIMARY_BY_CATEGORY[effectiveCategory] || [];
+  const mobileMore = MOBILE_MORE_BY_CATEGORY[effectiveCategory] || [];
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
@@ -338,7 +346,8 @@ function DashboardLayoutInner({ children }) {
           role={role}
           onSignOut={handleSignOut}
           isPlatformOwner={isPlatformOwner}
-          showPlatformSwitch={category === "agency"}
+          showPlatformSwitch={effectiveCategory === "agency"}
+          showAgencySwitch={effectiveCategory === "platform" && category === "agency"}
         />
       )}
 
@@ -380,7 +389,7 @@ function DashboardLayoutInner({ children }) {
                 </div>
               )}
 
-              {isPlatformOwner && category === "agency" && (
+              {isPlatformOwner && effectiveCategory === "agency" && (
                 <a
                   href="/dashboard/platform"
                   className="text-sm text-purple-600 hover:underline hidden sm:inline md:hidden"
@@ -512,7 +521,7 @@ function DashboardLayoutInner({ children }) {
           })}
 
           {(mobileMore.length > 0 ||
-            (isPlatformOwner && category === "agency")) && (
+            (isPlatformOwner && effectiveCategory === "agency")) && (
             <button
               onClick={() => setShowMoreSheet(true)}
               className="flex-1 flex flex-col items-center justify-center py-2 text-[11px] gap-0.5 text-slate-500"
@@ -547,7 +556,7 @@ function DashboardLayoutInner({ children }) {
                   {item.label}
                 </a>
               ))}
-              {isPlatformOwner && category === "agency" && (
+              {isPlatformOwner && effectiveCategory === "agency" && (
                 <a
                   href="/dashboard/platform"
                   className="block px-3 py-3 text-sm text-purple-600 rounded-md hover:bg-slate-50"

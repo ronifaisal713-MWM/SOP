@@ -23,6 +23,7 @@ export default function Sidebar({
   onSignOut,
   isPlatformOwner,
   showPlatformSwitch,
+  showAgencySwitch,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -105,6 +106,17 @@ export default function Sidebar({
           </a>
         )}
 
+        {showAgencySwitch && (
+          <a
+            href="/dashboard"
+            title={collapsed ? "Agency View" : undefined}
+            className="flex items-center gap-2 text-xs text-purple-300 hover:text-purple-200 mb-3"
+          >
+            <span>🏢</span>
+            {!collapsed && <span>Agency View</span>}
+          </a>
+        )}
+
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-brand-light text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
             {userLabel ? userLabel[0].toUpperCase() : "?"}
@@ -112,7 +124,9 @@ export default function Sidebar({
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-xs text-white truncate">{userLabel}</p>
-              <p className="text-[10px] text-slate-400">{ROLE_LABEL[role] || role}</p>
+              <p className="text-[10px] text-slate-400">
+                {showAgencySwitch ? "Platform Owner" : ROLE_LABEL[role] || role}
+              </p>
             </div>
           )}
         </div>
