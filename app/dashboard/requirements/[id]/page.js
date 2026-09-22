@@ -16,6 +16,7 @@ export default function RequirementDetailPage() {
 
   const [requirement, setRequirement] = useState(null);
   const [task, setTask] = useState(null);
+  const [taskHistory, setTaskHistory] = useState([]);
   const [isStaff, setIsStaff] = useState(false);
   const [loading, setLoading] = useState(true);
   const [converting, setConverting] = useState(false);
@@ -51,6 +52,30 @@ export default function RequirementDetailPage() {
       .maybeSingle();
 
     setTask(taskData || null);
+
+    if (taskData) {
+      const { data: history } = await supabase
+        .from("activity_log")
+        .select("*")
+        .eq("entity_type", "task")
+        .eq("entity_id", taskData.id)
+        .order("created_at", { ascending: true });
+
+      const rows = history || [];
+      if (rows.length > 0) {
+        const actorIds = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", actorIds);
+        const map = {};
+        (profiles || []).forEach((p) => (map[p.id] = p.full_name));
+        setTaskHistory(rows.map((r) => ({ ...r, actorName: map[r.actor_id] || "Unknown" })));
+      } else {
+        setTaskHistory([]);
+      }
+    }
+
     setLoading(false);
   }
 
@@ -179,6 +204,49 @@ export default function RequirementDetailPage() {
                 Your agency hasn't started work on this yet -- you'll see updates here once they
                 do.
               </p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4 p-4">
+          <h2 className="text-sm font-semibold text-slate-600 mb-3">Journey</h2>
+          <div className="space-y-3">
+            <div className="flex gap-3 text-sm">
+              <span className="text-slate-300 flex-shrink-0">📝</span>
+              <div>
+                <p className="text-slate-700">Requirement created</p>
+                <p className="text-xs text-slate-400">
+                  {new Date(requirement.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {requirement.converted_to_task_at && (
+              <div className="flex gap-3 text-sm">
+                <span className="text-slate-300 flex-shrink-0">➡️</span>
+                <div>
+                  <p className="text-slate-700">Converted to Task</p>
+                  <p className="text-xs text-slate-400">
+                    {new Date(requirement.converted_to_task_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {taskHistory.map((h) => (
+              <div key={h.id} className="flex gap-3 text-sm">
+                <span className="text-slate-300 flex-shrink-0">🔄</span>
+                <div>
+                  <p className="text-slate-700">
+                    <span className="font-medium">{h.actorName}</span> — {h.action}
+                  </p>
+                  <p className="text-xs text-slate-400">{new Date(h.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+
+            {!requirement.converted_to_task_at && (
+              <p className="text-xs text-slate-300 italic">Not converted to a task yet.</p>
             )}
           </div>
         </div>
