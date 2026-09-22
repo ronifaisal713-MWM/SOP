@@ -435,24 +435,41 @@ export default function MonthlyReportsPage() {
                   multiple
                   onChange={(e) => {
                     const selected = Array.from(e.target.files || []);
-                    if (selected.length > 10) {
+                    e.target.value = ""; // allow re-selecting the same file later
+                    const combined = [...files, ...selected];
+                    if (combined.length > 10) {
                       setError("You can attach at most 10 documents.");
-                      e.target.value = "";
                       return;
                     }
                     const tooBig = selected.find((f) => f.size > 100 * 1024 * 1024);
                     if (tooBig) {
                       setError(`"${tooBig.name}" is too large. Max size is 100MB.`);
-                      e.target.value = "";
                       return;
                     }
                     setError("");
-                    setFiles(selected);
+                    setFiles(combined);
                   }}
                   className="text-sm"
                 />
                 {files.length > 0 && (
-                  <p className="text-xs text-slate-400 mt-1">{files.length} file(s) selected.</p>
+                  <div className="mt-2 space-y-1">
+                    {files.map((f, i) => (
+                      <div
+                        key={`${f.name}-${f.size}-${i}`}
+                        className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 rounded-md px-2 py-1.5"
+                      >
+                        <span className="truncate">📎 {f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-red-500 ml-2 flex-shrink-0"
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
