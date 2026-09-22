@@ -296,7 +296,7 @@ export default function NewRequirementPage() {
                     key={`${f.name}-${f.size}-${i}`}
                     className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 rounded-md px-2 py-1.5"
                   >
-                    <span className="truncate">📎 {f.name}</span>
+                    <span className="truncate min-w-0">📎 {f.name}</span>
                     <button
                       type="button"
                       onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}

@@ -562,7 +562,7 @@ function DashboardLayoutInner({ children }) {
           onClick={() => setShowMoreSheet(false)}
         >
           <div
-            className="bg-white w-full rounded-t-lg shadow-2xl p-4"
+            className="bg-white w-full rounded-t-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto"
             style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
             onClick={(e) => e.stopPropagation()}
           >

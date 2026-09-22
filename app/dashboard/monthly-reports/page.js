@@ -388,10 +388,10 @@ export default function MonthlyReportsPage() {
         )}
 
         {showForm && (
-          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-40 px-4">
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-40 px-4 py-8">
             <form
               onSubmit={handleSubmitReport}
-              className="bg-white border border-slate-200 rounded-lg p-5 shadow-lg space-y-3 w-full max-w-md"
+              className="bg-white border border-slate-200 rounded-lg p-5 shadow-lg space-y-3 w-full max-w-md max-h-[85vh] overflow-y-auto"
             >
               <h3 className="text-sm font-semibold text-slate-700">New Monthly Report</h3>
 
@@ -458,7 +458,7 @@ export default function MonthlyReportsPage() {
                         key={`${f.name}-${f.size}-${i}`}
                         className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 rounded-md px-2 py-1.5"
                       >
-                        <span className="truncate">📎 {f.name}</span>
+                        <span className="truncate min-w-0">📎 {f.name}</span>
                         <button
                           type="button"
                           onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}

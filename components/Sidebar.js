@@ -64,7 +64,7 @@ export default function Sidebar({
       }`}
     >
       <div className="flex items-center justify-between px-4 h-14 border-b border-white/10 flex-shrink-0">
-        {!collapsed && <span className="font-semibold text-white text-sm truncate">Agency OS</span>}
+        {!collapsed && <span className="font-semibold text-white text-sm truncate min-w-0">Agency OS</span>}
         <button
           onClick={toggle}
           className="text-slate-400 hover:text-white text-sm flex-shrink-0"
@@ -74,7 +74,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 min-h-0 overflow-y-auto py-3">
         {sections.map((sec, i) => (
           <div key={i} className="mb-4">
             {sec.section && !collapsed && (

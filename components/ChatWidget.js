@@ -11,10 +11,10 @@ export default function ChatWidget({ title, open, onToggle, onClose, children })
       className="fixed right-5 z-30 flex flex-col items-end bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]"
     >
       {open && (
-        <div className="mb-3 w-80 sm:w-96 h-[460px] max-h-[70vh] bg-white border border-slate-200 rounded-lg shadow-2xl flex flex-col overflow-hidden">
+        <div className="mb-3 w-[calc(100vw-2.5rem)] max-w-80 sm:max-w-96 h-[460px] max-h-[70vh] bg-white border border-slate-200 rounded-lg shadow-2xl flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-brand text-white flex-shrink-0">
-            <span className="text-sm font-semibold truncate">{title}</span>
-            <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">
+            <span className="text-sm font-semibold truncate min-w-0">{title}</span>
+            <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none flex-shrink-0">
               ×
             </button>
           </div>

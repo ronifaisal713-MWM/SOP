@@ -102,7 +102,7 @@ export default function DocumentsManager({ entityColumn, entityId, folder, canMa
               href={fileUrl(f.storage_path)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand underline truncate"
+              className="text-brand underline truncate min-w-0"
             >
               📎 {f.file_name}
             </a>
