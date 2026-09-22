@@ -39,6 +39,7 @@ export default function MonthlyReportsPage() {
   const [title, setTitle] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -120,19 +121,37 @@ export default function MonthlyReportsPage() {
     setSubmitting(true);
     setError("");
 
-    const { error: insertError } = await supabase.from("monthly_reports").insert({
-      client_id: selectedClientId,
-      title: title.trim(),
-      report_month: `${reportMonth}-01`,
-      description: description.trim() || null,
-      created_by: user.id,
-    });
+    const { data: newReport, error: insertError } = await supabase
+      .from("monthly_reports")
+      .insert({
+        client_id: selectedClientId,
+        title: title.trim(),
+        report_month: `${reportMonth}-01`,
+        description: description.trim() || null,
+        created_by: user.id,
+      })
+      .select()
+      .single();
 
     setSubmitting(false);
 
     if (insertError) {
       setError(insertError.message);
       return;
+    }
+
+    if (files.length > 0) {
+      for (const f of files) {
+        const path = `reports/${selectedClientId}/${crypto.randomUUID()}-${f.name}`;
+        const { error: uploadError } = await supabase.storage.from("chat-attachments").upload(path, f);
+        if (uploadError) continue;
+        await supabase.from("files").insert({
+          monthly_report_id: newReport.id,
+          storage_path: path,
+          file_name: f.name,
+          uploaded_by: user.id,
+        });
+      }
     }
 
     // Jump straight to the folder this report landed in.
@@ -143,6 +162,7 @@ export default function MonthlyReportsPage() {
     setTitle("");
     setReportMonth("");
     setDescription("");
+    setFiles([]);
     setShowForm(false);
     await loadReports(selectedClientId, category);
   }
@@ -406,9 +426,35 @@ export default function MonthlyReportsPage() {
                 />
               </div>
 
-              <p className="text-xs text-slate-400">
-                You can attach documents (up to 10) once this report is created.
-              </p>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">
+                  Attach Documents (optional, up to 10)
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.files || []);
+                    if (selected.length > 10) {
+                      setError("You can attach at most 10 documents.");
+                      e.target.value = "";
+                      return;
+                    }
+                    const tooBig = selected.find((f) => f.size > 100 * 1024 * 1024);
+                    if (tooBig) {
+                      setError(`"${tooBig.name}" is too large. Max size is 100MB.`);
+                      e.target.value = "";
+                      return;
+                    }
+                    setError("");
+                    setFiles(selected);
+                  }}
+                  className="text-sm"
+                />
+                {files.length > 0 && (
+                  <p className="text-xs text-slate-400 mt-1">{files.length} file(s) selected.</p>
+                )}
+              </div>
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -422,7 +468,10 @@ export default function MonthlyReportsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setFiles([]);
+                  }}
                   className="px-4 py-2 rounded-md border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100 transition"
                 >
                   Cancel

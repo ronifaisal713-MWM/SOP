@@ -42,6 +42,7 @@ export default function NewRequirementPage() {
     clientId: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
 
   // Figure out whether the signed-in user is staff (picks a client from a
@@ -117,6 +118,23 @@ export default function NewRequirementPage() {
     if (insertError) {
       setError(insertError.message);
       return;
+    }
+
+    if (files.length > 0) {
+      for (const f of files) {
+        const path = `requirements/${crypto.randomUUID()}-${f.name}`;
+        const { error: uploadError } = await supabase.storage.from("chat-attachments").upload(path, f);
+        if (uploadError) {
+          setError(`Requirement created, but "${f.name}" failed to upload: ${uploadError.message}`);
+          continue;
+        }
+        await supabase.from("files").insert({
+          requirement_id: newReq.id,
+          storage_path: path,
+          file_name: f.name,
+          uploaded_by: user?.id || null,
+        });
+      }
     }
 
     router.push(`/dashboard/requirements/${newReq.id}`);
@@ -246,9 +264,35 @@ export default function NewRequirementPage() {
             />
           </div>
 
-          <p className="text-xs text-slate-400">
-            You can attach documents (up to 10) once this requirement is created.
-          </p>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">
+              Attach Documents (optional, up to 10)
+            </label>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => {
+                const selected = Array.from(e.target.files || []);
+                if (selected.length > 10) {
+                  setError("You can attach at most 10 documents.");
+                  e.target.value = "";
+                  return;
+                }
+                const tooBig = selected.find((f) => f.size > 100 * 1024 * 1024);
+                if (tooBig) {
+                  setError(`"${tooBig.name}" is too large. Max size is 100MB.`);
+                  e.target.value = "";
+                  return;
+                }
+                setError("");
+                setFiles(selected);
+              }}
+              className="text-sm"
+            />
+            {files.length > 0 && (
+              <p className="text-xs text-slate-400 mt-1">{files.length} file(s) selected.</p>
+            )}
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
