@@ -59,7 +59,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`hidden md:flex flex-col bg-[#0f2942] text-slate-200 h-screen sticky top-0 flex-shrink-0 transition-all duration-200 ${
+      className={`hidden md:flex flex-col bg-[#0f2942] text-slate-200 h-screen sticky top-0 self-start flex-shrink-0 transition-all duration-200 ${
         collapsed ? "w-16" : "w-60"
       }`}
     >
