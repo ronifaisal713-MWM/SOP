@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
@@ -39,6 +39,49 @@ const NAV_BY_CATEGORY = {
   ],
 };
 
+// Bottom tab bar (mobile only) shows at most 4 primary destinations per
+// role, plus a "More" tab for anything else -- a long horizontal link
+// list doesn't fit a phone screen the way it does a desktop header.
+const MOBILE_PRIMARY_BY_CATEGORY = {
+  platform: [
+    { href: "/dashboard/platform", label: "Home", icon: "🏠" },
+    { href: "/dashboard/platform/email-requests", label: "Requests", icon: "✉️" },
+  ],
+  agency: [
+    { href: "/dashboard", label: "Home", icon: "🏠" },
+    { href: "/dashboard/tasks", label: "Tasks", icon: "📋" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
+    { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+  ],
+  staff: [
+    { href: "/dashboard", label: "Home", icon: "🏠" },
+    { href: "/dashboard/tasks", label: "Tasks", icon: "📋" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
+    { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+  ],
+  client: [
+    { href: "/dashboard", label: "Home", icon: "🏠" },
+    { href: "/dashboard/my-tasks", label: "Tasks", icon: "📋" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
+    { href: "/dashboard/monthly-reports", label: "Reports", icon: "📊" },
+  ],
+};
+
+const MOBILE_MORE_BY_CATEGORY = {
+  platform: [],
+  agency: [
+    { href: "/dashboard/admin/team", label: "Team" },
+    { href: "/dashboard/reports", label: "Reports" },
+    { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/admin/email-requests", label: "Email Requests" },
+  ],
+  staff: [
+    { href: "/dashboard/reports", label: "Reports" },
+    { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+  ],
+  client: [],
+};
+
 // This layout wraps every /dashboard/* page, so the top bar -- and which
 // links appear on it -- is always the same no matter which page you're
 // on. It's also where the "does this URL even belong to my portal?" auth
@@ -57,6 +100,8 @@ function DashboardLayoutInner({ children }) {
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMoreSheet, setShowMoreSheet] = useState(false);
+  const pathname = usePathname();
   const [chatOpen, setChatOpen] = useState(searchParams.get("openChat") === "1");
   const [isPlatformOwner, setIsPlatformOwner] = useState(false);
   const [deletionStatus, setDeletionStatus] = useState(null);
@@ -213,26 +258,31 @@ function DashboardLayoutInner({ children }) {
   }
 
   const navItems = NAV_BY_CATEGORY[category] || [];
+  const mobilePrimary = MOBILE_PRIMARY_BY_CATEGORY[category] || [];
+  const mobileMore = MOBILE_MORE_BY_CATEGORY[category] || [];
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <header
-        className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky z-10 flex-wrap gap-3"
+        className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky z-10 flex-wrap gap-3"
         style={{ top: 0, paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
       >
         <div className="flex items-center gap-5 flex-wrap">
           <span className="font-semibold text-brand">Agency OS</span>
-          {checked &&
-            navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-sm text-slate-600 hover:text-brand transition"
-              >
-                {item.label}
-              </a>
-            ))}
+          {checked && (
+            <div className="hidden md:flex items-center gap-5 flex-wrap">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm text-slate-600 hover:text-brand transition"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {checked && (
@@ -267,7 +317,7 @@ function DashboardLayoutInner({ children }) {
             {isPlatformOwner && category === "agency" && (
               <a
                 href="/dashboard/platform"
-                className="text-sm text-purple-600 hover:underline"
+                className="text-sm text-purple-600 hover:underline hidden sm:inline"
                 title="Switch to your Platform Owner dashboard"
               >
                 🔁 Platform View
@@ -277,13 +327,14 @@ function DashboardLayoutInner({ children }) {
             <a
               href="/dashboard/profile"
               className="text-sm text-slate-500 hover:text-brand transition"
+              title="Profile"
             >
-              👤 Profile
+              👤 <span className="hidden sm:inline">Profile</span>
             </a>
 
             <button
               onClick={handleSignOut}
-              className="text-sm text-slate-500 hover:text-brand transition"
+              className="text-sm text-slate-500 hover:text-brand transition hidden sm:inline"
             >
               Sign Out
             </button>
@@ -291,19 +342,21 @@ function DashboardLayoutInner({ children }) {
         )}
       </header>
 
-      {checked ? (
-        deletionStatus ? (
-          <DeletionPendingNotice
-            status={deletionStatus}
-            onCancel={handleCancelDeletion}
-            onSignOut={handleSignOut}
-          />
+      <div className="pb-20 md:pb-0">
+        {checked ? (
+          deletionStatus ? (
+            <DeletionPendingNotice
+              status={deletionStatus}
+              onCancel={handleCancelDeletion}
+              onSignOut={handleSignOut}
+            />
+          ) : (
+            children
+          )
         ) : (
-          children
-        )
-      ) : (
-        <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
-      )}
+          <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
+        )}
+      </div>
 
       {/* Floating chat -- clients reach the agency this way from any page,
           instead of navigating to a separate Messages page. */}
@@ -365,6 +418,85 @@ function DashboardLayoutInner({ children }) {
             )}
           </div>
         </ChatWidget>
+      )}
+
+      {/* Bottom tab bar -- mobile only. A long horizontal link list
+          (fine on a desktop header) doesn't fit a phone the way a
+          native app's tab bar does. */}
+      {checked && (mobilePrimary.length > 0 || mobileMore.length > 0) && (
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-stretch z-30"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          {mobilePrimary.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`flex-1 flex flex-col items-center justify-center py-2 text-[11px] gap-0.5 ${
+                  active ? "text-brand font-medium" : "text-slate-500"
+                }`}
+              >
+                <span className="text-lg leading-none">{item.icon}</span>
+                {item.label}
+              </a>
+            );
+          })}
+
+          {(mobileMore.length > 0 ||
+            (isPlatformOwner && category === "agency")) && (
+            <button
+              onClick={() => setShowMoreSheet(true)}
+              className="flex-1 flex flex-col items-center justify-center py-2 text-[11px] gap-0.5 text-slate-500"
+            >
+              <span className="text-lg leading-none">☰</span>
+              More
+            </button>
+          )}
+        </nav>
+      )}
+
+      {/* "More" bottom sheet -- overflow nav items plus Sign Out on
+          mobile, where the header hides those to stay compact. */}
+      {showMoreSheet && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/30 z-40 flex items-end"
+          onClick={() => setShowMoreSheet(false)}
+        >
+          <div
+            className="bg-white w-full rounded-t-lg shadow-2xl p-4"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
+            <div className="space-y-1">
+              {mobileMore.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="block px-3 py-3 text-sm text-slate-700 rounded-md hover:bg-slate-50"
+                >
+                  {item.label}
+                </a>
+              ))}
+              {isPlatformOwner && category === "agency" && (
+                <a
+                  href="/dashboard/platform"
+                  className="block px-3 py-3 text-sm text-purple-600 rounded-md hover:bg-slate-50"
+                >
+                  🔁 Platform View
+                </a>
+              )}
+              <button
+                onClick={handleSignOut}
+                className="w-full text-left px-3 py-3 text-sm text-slate-500 rounded-md hover:bg-slate-50"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

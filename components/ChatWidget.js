@@ -8,8 +8,7 @@
 export default function ChatWidget({ title, open, onToggle, onClose, children }) {
   return (
     <div
-      className="fixed right-5 z-30 flex flex-col items-end"
-      style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
+      className="fixed right-5 z-30 flex flex-col items-end bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]"
     >
       {open && (
         <div className="mb-3 w-80 sm:w-96 h-[460px] max-h-[70vh] bg-white border border-slate-200 rounded-lg shadow-2xl flex flex-col overflow-hidden">
