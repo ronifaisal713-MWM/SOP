@@ -217,7 +217,10 @@ function DashboardLayoutInner({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10 flex-wrap gap-3">
+      <header
+        className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky z-10 flex-wrap gap-3"
+        style={{ top: 0, paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
+      >
         <div className="flex items-center gap-5 flex-wrap">
           <span className="font-semibold text-brand">Agency OS</span>
           {checked &&
