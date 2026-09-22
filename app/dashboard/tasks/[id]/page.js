@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import TaskChat from "@/components/TaskChat";
+import DocumentsManager from "@/components/DocumentsManager";
 
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 const STATUS_OPTIONS = [
@@ -35,7 +36,6 @@ export default function TaskDetailPage() {
   const { id } = params;
 
   const [task, setTask] = useState(null);
-  const [requirementFile, setRequirementFile] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
   const [team, setTeam] = useState([]);
   const [assignees, setAssignees] = useState([]);
@@ -68,17 +68,6 @@ export default function TaskDetailPage() {
       return;
     }
     setTask(taskData);
-
-    if (taskData.requirement_id) {
-      const { data: reqData } = await supabase
-        .from("requirements")
-        .select("storage_path, file_name")
-        .eq("id", taskData.requirement_id)
-        .maybeSingle();
-      if (reqData?.storage_path) {
-        setRequirementFile(reqData);
-      }
-    }
 
     if (staff) {
       const { data: teamData } = await supabase
@@ -191,15 +180,16 @@ export default function TaskDetailPage() {
             <p className="text-sm text-slate-700 mt-3 whitespace-pre-wrap">{task.description}</p>
           )}
 
-          {requirementFile?.storage_path && (
-            <a
-              href={supabase.storage.from("chat-attachments").getPublicUrl(requirementFile.storage_path).data.publicUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-brand underline block mt-2"
-            >
-              📎 {requirementFile.file_name} (from Requirement)
-            </a>
+          {task.requirement_id && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <DocumentsManager
+                entityColumn="requirement_id"
+                entityId={task.requirement_id}
+                folder={`requirements/${task.requirement_id}`}
+                canManage={false}
+              />
+              <p className="text-xs text-slate-300 mt-1">From the original Requirement.</p>
+            </div>
           )}
 
           {/* ---------- Assignees (multiple people can work on one task) ---------- */}
