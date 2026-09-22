@@ -7,6 +7,69 @@ import { categoryForRole } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import ClientChat from "@/components/ClientChat";
 import StaffChat from "@/components/StaffChat";
+import Sidebar from "@/components/Sidebar";
+
+// Desktop sidebar navigation, grouped into sections with icons.
+const SIDEBAR_BY_CATEGORY = {
+  platform: [
+    {
+      section: null,
+      items: [
+        { href: "/dashboard/platform", label: "Dashboard", icon: "🏠" },
+        { href: "/dashboard/platform/email-requests", label: "Email Requests", icon: "✉️" },
+      ],
+    },
+  ],
+  agency: [
+    {
+      section: "Main",
+      items: [
+        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+        { href: "/dashboard/tasks", label: "Task Board", icon: "📋" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
+        { href: "/dashboard/reports", label: "Reports", icon: "📊" },
+      ],
+    },
+    {
+      section: "Management",
+      items: [
+        { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+        { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+        { href: "/dashboard/admin/email-requests", label: "Email Requests", icon: "✉️" },
+      ],
+    },
+  ],
+  staff: [
+    {
+      section: "Main",
+      items: [
+        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+        { href: "/dashboard/tasks", label: "Task Board", icon: "📋" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
+        { href: "/dashboard/reports", label: "Reports", icon: "📊" },
+      ],
+    },
+    {
+      section: "Clients",
+      items: [
+        { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+      ],
+    },
+  ],
+  client: [
+    {
+      section: null,
+      items: [
+        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+        { href: "/dashboard/my-tasks", label: "My Tasks", icon: "📋" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+      ],
+    },
+  ],
+};
 
 const NAV_BY_CATEGORY = {
   platform: [
@@ -92,6 +155,7 @@ function DashboardLayoutInner({ children }) {
   const [category, setCategory] = useState(null);
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [fullName, setFullName] = useState(null);
   const [clientId, setClientId] = useState(null);
   const [organizationId, setOrganizationId] = useState(null);
   const [owners, setOwners] = useState([]);
@@ -119,13 +183,14 @@ function DashboardLayoutInner({ children }) {
       const sessionUser = sessionData.session.user;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_platform_owner, organization_id, deletion_requested_at")
+        .select("role, full_name, is_platform_owner, organization_id, deletion_requested_at")
         .eq("id", sessionUser.id)
         .single();
 
       if (!isMounted) return;
       setUser(sessionUser);
       setRole(profile?.role || null);
+      setFullName(profile?.full_name || null);
       setIsPlatformOwner(!!profile?.is_platform_owner);
       const cat = categoryForRole(profile?.role);
       setCategory(cat);
@@ -258,104 +323,106 @@ function DashboardLayoutInner({ children }) {
   }
 
   const navItems = NAV_BY_CATEGORY[category] || [];
+  const sidebarSections = SIDEBAR_BY_CATEGORY[category] || [];
   const mobilePrimary = MOBILE_PRIMARY_BY_CATEGORY[category] || [];
   const mobileMore = MOBILE_MORE_BY_CATEGORY[category] || [];
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header
-        className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky z-10 flex-wrap gap-3"
-        style={{ top: 0, paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
-      >
-        <div className="flex items-center gap-5 flex-wrap">
-          <span className="font-semibold text-brand">Agency OS</span>
+    <div className="flex min-h-screen bg-slate-50">
+      {checked && (
+        <Sidebar
+          sections={sidebarSections}
+          pathname={pathname}
+          userLabel={fullName || user?.email}
+          role={role}
+          onSignOut={handleSignOut}
+          isPlatformOwner={isPlatformOwner}
+          showPlatformSwitch={category === "agency"}
+        />
+      )}
+
+      <div className="flex-1 min-w-0">
+        <header
+          className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky z-10 flex-wrap gap-3"
+          style={{ top: 0, paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
+        >
+          <div className="flex items-center gap-5 flex-wrap">
+            <span className="font-semibold text-brand md:hidden">Agency OS</span>
+          </div>
+
           {checked && (
-            <div className="hidden md:flex items-center gap-5 flex-wrap">
-              {navItems.map((item) => (
+            <div className="flex items-center gap-4 relative">
+              <button onClick={handleOpenNotifications} className="relative text-lg" title="Notifications">
+                🔔
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="absolute right-0 top-8 w-72 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-20">
+                  {notifications.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
+                  )}
+                  {notifications.map((n) => (
+                    <a
+                      key={n.id}
+                      href={n.link || "#"}
+                      className="block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
+                    >
+                      <p className="text-xs font-medium text-slate-700">{n.title}</p>
+                      {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {isPlatformOwner && category === "agency" && (
                 <a
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm text-slate-600 hover:text-brand transition"
+                  href="/dashboard/platform"
+                  className="text-sm text-purple-600 hover:underline hidden sm:inline md:hidden"
+                  title="Switch to your Platform Owner dashboard"
                 >
-                  {item.label}
+                  🔁 Platform View
                 </a>
-              ))}
+              )}
+
+              <a
+                href="/dashboard/profile"
+                className="text-sm text-slate-500 hover:text-brand transition md:hidden"
+                title="Profile"
+              >
+                👤 <span className="hidden sm:inline">Profile</span>
+              </a>
+
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-slate-500 hover:text-brand transition hidden sm:inline md:hidden"
+              >
+                Sign Out
+              </button>
             </div>
           )}
-        </div>
+        </header>
 
-        {checked && (
-          <div className="flex items-center gap-4 relative">
-            <button onClick={handleOpenNotifications} className="relative text-lg" title="Notifications">
-              🔔
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 top-8 w-72 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-20">
-                {notifications.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
-                )}
-                {notifications.map((n) => (
-                  <a
-                    key={n.id}
-                    href={n.link || "#"}
-                    className="block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
-                  >
-                    <p className="text-xs font-medium text-slate-700">{n.title}</p>
-                    {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {isPlatformOwner && category === "agency" && (
-              <a
-                href="/dashboard/platform"
-                className="text-sm text-purple-600 hover:underline hidden sm:inline"
-                title="Switch to your Platform Owner dashboard"
-              >
-                🔁 Platform View
-              </a>
-            )}
-
-            <a
-              href="/dashboard/profile"
-              className="text-sm text-slate-500 hover:text-brand transition"
-              title="Profile"
-            >
-              👤 <span className="hidden sm:inline">Profile</span>
-            </a>
-
-            <button
-              onClick={handleSignOut}
-              className="text-sm text-slate-500 hover:text-brand transition hidden sm:inline"
-            >
-              Sign Out
-            </button>
-          </div>
-        )}
-      </header>
-
-      <div className="pb-20 md:pb-0">
-        {checked ? (
-          deletionStatus ? (
-            <DeletionPendingNotice
-              status={deletionStatus}
-              onCancel={handleCancelDeletion}
-              onSignOut={handleSignOut}
-            />
+        <div className="pb-20 md:pb-0">
+          {checked ? (
+            deletionStatus ? (
+              <DeletionPendingNotice
+                status={deletionStatus}
+                onCancel={handleCancelDeletion}
+                onSignOut={handleSignOut}
+              />
+            ) : (
+              children
+            )
           ) : (
-            children
-          )
-        ) : (
-          <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
-        )}
+            <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>
+          )}
+        </div>
       </div>
 
       {/* Floating chat -- clients reach the agency this way from any page,
