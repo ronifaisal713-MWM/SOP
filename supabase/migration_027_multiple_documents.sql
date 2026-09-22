@@ -17,6 +17,7 @@ alter table files add column if not exists monthly_report_id uuid references mon
 -- requirement, or monthly report -- not just "any logged-in user",
 -- which would let someone from a different agency entirely delete
 -- another agency's files.
+drop policy if exists "scoped_delete_files" on files;
 create policy "scoped_delete_files" on files
   for delete
   using (
