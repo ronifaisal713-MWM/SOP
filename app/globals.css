@@ -32,11 +32,6 @@ html {
 
 body {
   overflow-x: hidden;
-  /* Keep the page from bouncing/rubber-banding sideways on mobile --
-     part of what makes a site feel like a "website" instead of an app.
-     Only set on body, not html too -- setting it on both has been
-     known to fully trap wheel/scroll input in some Chromium builds. */
-  overscroll-behavior-y: none;
 }
 
 /* Avoid the iOS "zoom on focus" behavior on form inputs, which breaks the
