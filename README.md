@@ -57,7 +57,8 @@ Billing.
    `supabase/migration_025_multiple_task_assignees.sql`, then
    `supabase/migration_026_requirement_edit_delete_file.sql`, then
    `supabase/migration_027_multiple_documents.sql`, then
-   `supabase/migration_028_new_requirement_notifications.sql`.
+   `supabase/migration_028_new_requirement_notifications.sql`, then
+   `supabase/migration_029_task_conversion_notifications.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
