@@ -58,11 +58,23 @@ export default function Sidebar({
   }
 
   return (
-    <aside
-      className={`hidden md:flex flex-col bg-[#0f2942] text-slate-200 h-screen sticky top-0 self-start flex-shrink-0 transition-all duration-200 ${
-        collapsed ? "w-16" : "w-60"
-      }`}
-    >
+    <>
+      {/* Spacer: occupies the same width in normal document flow so the
+          content area doesn't sit underneath the fixed sidebar. The
+          actual visible sidebar below is position: fixed -- completely
+          decoupled from scrolling/flexbox, so it can never scroll away
+          or misbehave the way position: sticky did in this layout. */}
+      <div
+        className={`hidden md:block flex-shrink-0 transition-all duration-200 ${
+          collapsed ? "w-16" : "w-60"
+        }`}
+      />
+
+      <aside
+        className={`hidden md:flex flex-col bg-[#0f2942] text-slate-200 h-screen fixed top-0 left-0 z-20 transition-all duration-200 ${
+          collapsed ? "w-16" : "w-60"
+        }`}
+      >
       <div className="flex items-center justify-between px-4 h-14 border-b border-white/10 flex-shrink-0">
         {!collapsed && <span className="font-semibold text-white text-sm truncate min-w-0">Agency OS</span>}
         <button
@@ -161,6 +173,7 @@ export default function Sidebar({
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
