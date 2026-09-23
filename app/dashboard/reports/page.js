@@ -26,6 +26,7 @@ export default function ReportsPage() {
   const [monthly, setMonthly] = useState({ newRequirements: 0, completedTasks: 0 });
   const [clientRows, setClientRows] = useState([]);
   const [teamRows, setTeamRows] = useState([]);
+  const [activeTimers, setActiveTimers] = useState([]);
 
   useEffect(() => {
     if (!checked || !allowed) return;

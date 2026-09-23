@@ -70,6 +70,7 @@ export default function TasksKanbanPage() {
   const [profileMap, setProfileMap] = useState({});
   const [assigneesByTask, setAssigneesByTask] = useState({});
   const [checklistByTask, setChecklistByTask] = useState({});
+  const [runningByTask, setRunningByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openChatTask, setOpenChatTask] = useState(null);
@@ -95,8 +96,25 @@ export default function TasksKanbanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, allowed, user]);
 
-  async function loadTasks() {
-    setLoading(true);
+  // Keep the "working now" indicators live -- someone starting or
+  // stopping a timer anywhere should show up on everyone's board
+  // without a manual refresh.
+  useEffect(() => {
+    if (!checked || !allowed) return;
+
+    const channel = supabase
+      .channel("board-running-timers")
+      .on("postgres_changes", { event: "*", schema: "public", table: "time_entries" }, () =>
+        loadTasks({ silent: true })
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked, allowed]);
+
+  async function loadTasks({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     const { data, error: fetchError } = await supabase
       .from("tasks")
       .select("*")
@@ -147,6 +165,35 @@ export default function TasksKanbanPage() {
         if (c.is_done) progress[c.task_id].done += 1;
       });
       setChecklistByTask(progress);
+
+      // Who currently has a timer running, so the board shows live work
+      // at a glance instead of having to open each task.
+      const { data: runningRows } = await supabase
+        .from("time_entries")
+        .select("task_id, user_id")
+        .in("task_id", taskIds)
+        .is("ended_at", null);
+
+      // Someone can run a timer on a task they aren't assigned to, so
+      // their name won't be in the assignee map -- look up any missing
+      // ones rather than showing a placeholder.
+      const runnerIds = [...new Set((runningRows || []).map((r) => r.user_id))];
+      const missingIds = runnerIds.filter((id) => !map[id]);
+      if (missingIds.length > 0) {
+        const { data: extraProfiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", missingIds);
+        (extraProfiles || []).forEach((p) => (map[p.id] = p.full_name));
+        setProfileMap({ ...map });
+      }
+
+      const running = {};
+      (runningRows || []).forEach((r) => {
+        if (!running[r.task_id]) running[r.task_id] = [];
+        running[r.task_id].push(map[r.user_id] || "Someone");
+      });
+      setRunningByTask(running);
     }
 
     setLoading(false);
@@ -209,12 +256,23 @@ export default function TasksKanbanPage() {
                   {colTasks.map((t) => (
                     <div
                       key={t.id}
-                      className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm text-sm"
+                      className={`bg-white border rounded-lg p-3 shadow-sm text-sm ${
+                        runningByTask[t.id] ? "border-green-400" : "border-slate-200"
+                      }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <AvatarStack names={assigneesByTask[t.id]} />
                         <p className="font-medium text-slate-800 flex-1">{t.title}</p>
                       </div>
+
+                      {runningByTask[t.id] && (
+                        <p className="text-green-600 text-xs mb-1 flex items-center gap-1 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                          <span className="truncate">
+                            {runningByTask[t.id].join(", ")} working now
+                          </span>
+                        </p>
+                      )}
                       <p className="text-slate-400 text-xs mb-1 truncate">
                         {assigneesByTask[t.id]?.length > 0
                           ? assigneesByTask[t.id].join(", ")
