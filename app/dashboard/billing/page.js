@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { categoryForRole } from "@/lib/roleCategory";
 import DocumentsManager from "@/components/DocumentsManager";
+import jsPDF from "jspdf";
 
 function generateInvoiceNumber() {
   const d = new Date();
@@ -26,6 +27,120 @@ const STATUS_STYLE = {
   overdue: "bg-red-100 text-red-700",
   unpaid: "bg-amber-100 text-amber-700",
 };
+
+async function loadImageAsDataUrl(url) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function imageFormatFromDataUrl(dataUrl) {
+  const match = /^data:image\/(\w+);/.exec(dataUrl || "");
+  const type = (match?.[1] || "png").toUpperCase();
+  return type === "JPG" ? "JPEG" : type;
+}
+
+// Builds the actual PDF that gets attached to the invoice and sent to
+// the client -- agency logo/name/contact info at the top, client's
+// billing details, then the charge itself. Returns a Blob, ready to
+// upload the same way any other document does.
+async function generateInvoicePdf({ agency, client, invoice }) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  if (agency?.logo_url) {
+    const dataUrl = await loadImageAsDataUrl(agency.logo_url);
+    if (dataUrl) {
+      try {
+        doc.addImage(dataUrl, imageFormatFromDataUrl(dataUrl), 15, y - 5, 28, 28);
+      } catch {
+        // If the logo can't be embedded (unsupported format, load
+        // failure, etc.), the invoice still generates -- just without it.
+      }
+    }
+  }
+
+  const textX = agency?.logo_url ? 50 : 15;
+  doc.setFontSize(16);
+  doc.setFont(undefined, "bold");
+  doc.text(agency?.name || "Agency", textX, y);
+  doc.setFontSize(9);
+  doc.setFont(undefined, "normal");
+  let infoY = y + 6;
+  [agency?.address, agency?.phone, agency?.website].filter(Boolean).forEach((line) => {
+    doc.text(line, textX, infoY);
+    infoY += 4.5;
+  });
+
+  y = 55;
+  doc.setFontSize(20);
+  doc.setFont(undefined, "bold");
+  doc.text("INVOICE", 15, y);
+
+  doc.setFontSize(9);
+  doc.setFont(undefined, "normal");
+  doc.text(`Invoice #: ${invoice.invoice_number}`, pageWidth - 80, y - 8);
+  doc.text(`Date: ${new Date(invoice.created_at || Date.now()).toLocaleDateString()}`, pageWidth - 80, y - 3);
+  if (invoice.due_date) {
+    doc.text(`Due: ${invoice.due_date}`, pageWidth - 80, y + 2);
+  }
+
+  y += 12;
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(10);
+  doc.text("Bill To:", 15, y);
+  y += 5;
+  doc.setFont(undefined, "normal");
+  doc.text(client?.company_name || "Client", 15, y);
+  [client?.address, client?.email, client?.phone].filter(Boolean).forEach((line) => {
+    y += 5;
+    doc.text(line, 15, y);
+  });
+
+  y += 12;
+  doc.setFillColor(31, 78, 121);
+  doc.rect(15, y, pageWidth - 30, 8, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(9);
+  doc.text("Description", 18, y + 5.5);
+  doc.text("Period", pageWidth - 90, y + 5.5);
+  doc.text("Amount", pageWidth - 45, y + 5.5);
+  doc.setTextColor(0, 0, 0);
+
+  y += 14;
+  doc.setFont(undefined, "normal");
+  const descLines = doc.splitTextToSize(invoice.description || "Service charge", pageWidth - 130);
+  doc.text(descLines, 18, y);
+  doc.text(invoice.period || "-", pageWidth - 90, y);
+  doc.text(`BDT ${Number(invoice.amount).toLocaleString()}`, pageWidth - 45, y);
+
+  y += Math.max(descLines.length * 5, 10) + 10;
+  doc.setDrawColor(210);
+  doc.line(15, y, pageWidth - 15, y);
+
+  y += 8;
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(13);
+  doc.text(`Total: BDT ${Number(invoice.amount).toLocaleString()}`, pageWidth - 90, y);
+
+  y += 16;
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(9);
+  doc.text("Thank you for your business.", 15, y);
+
+  return doc.output("blob");
+}
 
 export default function BillingPage() {
   const { user, checked } = useRequireAuth();
@@ -135,24 +250,67 @@ export default function BillingPage() {
     setSubmitting(true);
     setError("");
 
-    const { error: insertError } = await supabase.from("invoices").insert({
-      client_id: selectedClientId,
-      invoice_number: invoiceNumber.trim(),
-      amount: parseFloat(amount),
-      period: period.trim() || null,
-      due_date: dueDate || null,
-      description: description.trim() || null,
-      created_by: user.id,
-      status: "unpaid",
-    });
-
-    setSubmitting(false);
+    const { data: newInvoice, error: insertError } = await supabase
+      .from("invoices")
+      .insert({
+        client_id: selectedClientId,
+        invoice_number: invoiceNumber.trim(),
+        amount: parseFloat(amount),
+        period: period.trim() || null,
+        due_date: dueDate || null,
+        description: description.trim() || null,
+        created_by: user.id,
+        status: "unpaid",
+      })
+      .select()
+      .single();
 
     if (insertError) {
+      setSubmitting(false);
       setError(insertError.message);
       return;
     }
 
+    // Auto-generate the PDF and attach it -- this is what the client
+    // actually sees/downloads, not just the raw record.
+    try {
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("company_name, address, email, phone, organization_id")
+        .eq("id", selectedClientId)
+        .single();
+
+      const { data: agencyData } = clientData?.organization_id
+        ? await supabase
+            .from("organizations")
+            .select("name, logo_url, address, phone, website")
+            .eq("id", clientData.organization_id)
+            .single()
+        : { data: null };
+
+      const pdfBlob = await generateInvoicePdf({ agency: agencyData, client: clientData, invoice: newInvoice });
+      const fileName = `${newInvoice.invoice_number}.pdf`;
+      const path = `invoices/${selectedClientId}/${crypto.randomUUID()}-${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("chat-attachments")
+        .upload(path, pdfBlob, { contentType: "application/pdf" });
+
+      if (!uploadError) {
+        await supabase.from("files").insert({
+          invoice_id: newInvoice.id,
+          storage_path: path,
+          file_name: fileName,
+          uploaded_by: user.id,
+        });
+      }
+    } catch {
+      // The invoice itself is already created and sent even if PDF
+      // generation fails for some reason -- staff can still attach a
+      // file manually from the card below.
+    }
+
+    setSubmitting(false);
     setShowForm(false);
     await loadInvoices(selectedClientId, category);
   }
