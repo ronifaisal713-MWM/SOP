@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole, ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
+import MessageReactions from "@/components/MessageReactions";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -341,6 +342,11 @@ export default function ClientChat({
                     ✓ Acknowledge
                   </button>
                 )}
+                <MessageReactions
+                  messageId={m.id}
+                  currentUser={currentUser}
+                  align={isMine ? "right" : "left"}
+                />
               </div>
             </div>
           );

@@ -6,6 +6,7 @@ import { useRequireRole } from "@/lib/useRequireRole";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import TaskChat from "@/components/TaskChat";
+import TaskDetailsPanel from "@/components/TaskDetailsPanel";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -72,6 +73,7 @@ export default function TasksKanbanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openChatTask, setOpenChatTask] = useState(null);
+  const [openDetailsTask, setOpenDetailsTask] = useState(null);
 
   useEffect(() => {
     if (!checked || !allowed) return;
@@ -243,12 +245,12 @@ export default function TasksKanbanPage() {
                         >
                           💬 Chat
                         </button>
-                        <a
-                          href={`/dashboard/tasks/${t.id}`}
+                        <button
+                          onClick={() => setOpenDetailsTask(t)}
                           className="text-xs text-slate-400 hover:underline"
                         >
                           Details
-                        </a>
+                        </button>
                       </div>
                       <select
                         value={t.status}
@@ -285,6 +287,36 @@ export default function TasksKanbanPage() {
         >
           <TaskChat taskId={openChatTask.id} currentUser={user} isStaff={true} />
         </ChatWidget>
+      )}
+
+      {openDetailsTask && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-start justify-center z-40 px-4 py-8 overflow-y-auto"
+          onClick={() => setOpenDetailsTask(null)}
+        >
+          <div
+            className="bg-slate-50 rounded-lg shadow-2xl w-full max-w-2xl my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 rounded-t-lg sticky top-0 z-10">
+              <h2 className="text-sm font-semibold text-slate-700 truncate min-w-0">Task Details</h2>
+              <button
+                onClick={() => setOpenDetailsTask(null)}
+                className="text-slate-400 hover:text-slate-700 text-lg leading-none flex-shrink-0 ml-2"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <TaskDetailsPanel
+                taskId={openDetailsTask.id}
+                currentUser={user}
+                isStaff={true}
+                onTaskChanged={loadTasks}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

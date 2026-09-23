@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
+import MessageReactions from "@/components/MessageReactions";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -71,16 +72,49 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
     setLoading(false);
   }
 
+  // Everyone actually in this task's conversation can be mentioned by
+  // anyone else in it -- staff can mention the client contacts, and a
+  // client can mention the staff working on their task. RLS decides
+  // what's actually readable; this just lists what it returns.
+  async function loadMentionablepeople() {
+    const { data: task } = await supabase
+      .from("tasks")
+      .select("requirement_id")
+      .eq("id", taskId)
+      .maybeSingle();
+    if (!task?.requirement_id) return;
+
+    const { data: req } = await supabase
+      .from("requirements")
+      .select("client_id")
+      .eq("id", task.requirement_id)
+      .maybeSingle();
+    if (!req?.client_id) return;
+
+    const people = [];
+
+    // Staff side: a client's own RLS (migration_015) already narrows
+    // this to just the staff assigned to them, so the same query
+    // works correctly from either side.
+    const { data: staffProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .in("role", ALL_STAFF_ROLES);
+    (staffProfiles || []).forEach((p) => people.push({ id: p.id, full_name: p.full_name }));
+
+    // Client side: the contacts on this client company.
+    const { data: clientContacts } = await supabase
+      .from("client_users")
+      .select("id, full_name")
+      .eq("client_id", req.client_id);
+    (clientContacts || []).forEach((c) => people.push({ id: c.id, full_name: c.full_name }));
+
+    setTeam(people.filter((p) => p.id !== currentUser.id));
+  }
+
   useEffect(() => {
     loadMessages();
-
-    if (isStaff) {
-      supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("role", ALL_STAFF_ROLES)
-        .then(({ data }) => setTeam((data || []).filter((m) => m.id !== currentUser.id)));
-    }
+    loadMentionablepeople();
 
     const channel = supabase
       .channel(`task-${taskId}-messages`)
@@ -246,6 +280,11 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                     ✓ Acknowledge
                   </button>
                 )}
+                <MessageReactions
+                  messageId={m.id}
+                  currentUser={currentUser}
+                  align={isMine ? "right" : "left"}
+                />
               </div>
             </div>
           );
@@ -350,16 +389,14 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
               }}
             />
           </label>
-          {isStaff && (
-            <button
-              type="button"
-              onClick={() => setShowMentionPicker((s) => !s)}
-              className="text-lg px-1"
-              title="Mention someone"
-            >
-              @
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowMentionPicker((s) => !s)}
+            className="text-lg px-1"
+            title="Mention someone"
+          >
+            @
+          </button>
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}

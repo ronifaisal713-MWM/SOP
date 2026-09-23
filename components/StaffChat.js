@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import MessageReactions from "@/components/MessageReactions";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -163,6 +164,11 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
                     📎 {m.files.file_name}
                   </a>
                 )}
+                <MessageReactions
+                  messageId={m.id}
+                  currentUser={currentUser}
+                  align={isMine ? "right" : "left"}
+                />
               </div>
             </div>
           );

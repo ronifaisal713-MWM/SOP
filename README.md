@@ -63,7 +63,8 @@ Billing.
    `supabase/migration_031_cascade_delete_task.sql`, then
    `supabase/migration_032_billing.sql`, then
    `supabase/migration_033_time_tracking.sql`, then
-   `supabase/migration_034_task_checklist.sql`.
+   `supabase/migration_034_task_checklist.sql`, then
+   `supabase/migration_035_message_reactions.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
