@@ -561,7 +561,12 @@ function DashboardLayoutInner({ children }) {
         >
           {mobilePrimary.map((item) => {
             const active = pathname === item.href;
-            const altHref = item.href === "/dashboard/admin/clients" ? "/dashboard/clients" : null;
+            const altHref =
+              item.href === "/dashboard/admin/clients"
+                ? "/dashboard/clients"
+                : item.href === "/dashboard/my-tasks"
+                ? "/dashboard/tasks"
+                : null;
             const badge =
               item.label !== "Home"
                 ? notifications.filter((n) => {

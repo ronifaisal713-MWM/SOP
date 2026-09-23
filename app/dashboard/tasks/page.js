@@ -75,8 +75,22 @@ export default function TasksKanbanPage() {
   useEffect(() => {
     if (!checked || !allowed) return;
     loadTasks();
+
+    // Visiting the board is exactly "seeing there's a new/updated task" --
+    // clear the sidebar/tab badge for it without waiting for the bell.
+    // (Deliberately does NOT touch pending @mention acknowledgments --
+    // those only clear via the ✓ button in the chat itself.)
+    if (user) {
+      supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .ilike("link", "/dashboard/tasks%")
+        .then(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, allowed]);
+  }, [checked, allowed, user]);
 
   async function loadTasks() {
     setLoading(true);

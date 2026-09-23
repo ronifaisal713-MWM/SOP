@@ -57,7 +57,12 @@ export default function Sidebar({
   // actually reflects unread client-chat activity.
   function badgeCountFor(item) {
     if (!notifications || item.label === "Dashboard") return 0;
-    const altHref = item.href === "/dashboard/admin/clients" ? "/dashboard/clients" : null;
+    const altHref =
+      item.href === "/dashboard/admin/clients"
+        ? "/dashboard/clients"
+        : item.href === "/dashboard/my-tasks"
+        ? "/dashboard/tasks"
+        : null;
     return notifications.filter((n) => {
       if (!n.is_read || !n.link) return false;
       const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");

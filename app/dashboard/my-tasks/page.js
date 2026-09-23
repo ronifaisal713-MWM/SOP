@@ -32,6 +32,16 @@ export default function MyTasksPage() {
   useEffect(() => {
     if (!checked || !user) return;
     loadTasks();
+
+    // Visiting this board is exactly "seeing there's a task update" --
+    // clear the sidebar/tab badge without waiting for the bell.
+    supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+      .ilike("link", "/dashboard/tasks%")
+      .then(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user]);
 
