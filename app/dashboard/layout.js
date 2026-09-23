@@ -37,6 +37,7 @@ const SIDEBAR_BY_CATEGORY = {
         { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
         { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
         { href: "/dashboard/admin/email-requests", label: "Email Requests", icon: "✉️" },
       ],
     },
@@ -56,6 +57,7 @@ const SIDEBAR_BY_CATEGORY = {
       items: [
         { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
       ],
     },
   ],
@@ -67,6 +69,7 @@ const SIDEBAR_BY_CATEGORY = {
         { href: "/dashboard/my-tasks", label: "My Tasks", icon: "📋" },
         { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
+        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
         { href: "/dashboard/team", label: "Your Team", icon: "👥" },
       ],
     },
@@ -86,6 +89,7 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/billing", label: "Billing" },
     { href: "/dashboard/admin/email-requests", label: "Email Requests" },
   ],
   staff: [
@@ -95,12 +99,14 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/billing", label: "Billing" },
   ],
   client: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/my-tasks", label: "My Tasks" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/billing", label: "Billing" },
     { href: "/dashboard/team", label: "Your Team" },
   ],
 };
@@ -139,13 +145,18 @@ const MOBILE_MORE_BY_CATEGORY = {
     { href: "/dashboard/admin/team", label: "Team" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/billing", label: "Billing" },
     { href: "/dashboard/admin/email-requests", label: "Email Requests" },
   ],
   staff: [
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
+    { href: "/dashboard/billing", label: "Billing" },
   ],
-  client: [{ href: "/dashboard/team", label: "Your Team" }],
+  client: [
+    { href: "/dashboard/billing", label: "Billing" },
+    { href: "/dashboard/team", label: "Your Team" },
+  ],
 };
 
 // This layout wraps every /dashboard/* page, so the top bar -- and which

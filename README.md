@@ -60,7 +60,8 @@ Billing.
    `supabase/migration_028_new_requirement_notifications.sql`, then
    `supabase/migration_029_task_conversion_notifications.sql`, then
    `supabase/migration_030_fill_notification_gaps.sql`, then
-   `supabase/migration_031_cascade_delete_task.sql`.
+   `supabase/migration_031_cascade_delete_task.sql`, then
+   `supabase/migration_032_billing.sql`.
 5. Run the dev server:
    ```bash
    npm run dev
