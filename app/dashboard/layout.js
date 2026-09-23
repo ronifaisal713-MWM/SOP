@@ -166,6 +166,7 @@ function DashboardLayoutInner({ children }) {
   const [staffDmOpen, setStaffDmOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [pendingMentionsCount, setPendingMentionsCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const pathname = usePathname();
@@ -305,6 +306,41 @@ function DashboardLayoutInner({ children }) {
     return () => supabase.removeChannel(channel);
   }, [user]);
 
+  // Pending @mentions are tracked separately from the generic
+  // notifications system on purpose: opening the bell marks every
+  // notification read at once, but a mention should stay flagged
+  // specifically until the person acknowledges that exact message
+  // (the ✓ button in the chat itself) -- not just glanced at the bell.
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadPendingMentions() {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("mentioned_user_id", user.id)
+        .eq("mention_acknowledged", false);
+      setPendingMentionsCount(count ?? 0);
+    }
+    loadPendingMentions();
+
+    const channel = supabase
+      .channel(`mentions-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `mentioned_user_id=eq.${user.id}` },
+        () => loadPendingMentions()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `mentioned_user_id=eq.${user.id}` },
+        () => loadPendingMentions()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [user]);
+
   async function handleCancelDeletion() {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -378,6 +414,14 @@ function DashboardLayoutInner({ children }) {
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                     {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+                {pendingMentionsCount > 0 && (
+                  <span
+                    className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center"
+                    title={`${pendingMentionsCount} mention(s) still waiting for you to acknowledge`}
+                  >
+                    @
                   </span>
                 )}
               </button>
