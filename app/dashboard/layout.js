@@ -261,13 +261,34 @@ function DashboardLayoutInner({ children }) {
         }
       }
 
-      const { data: notifs } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", sessionUser.id)
-        .order("created_at", { ascending: false })
-        .limit(15);
-      if (isMounted) setNotifications(notifs || []);
+      // Two-part fetch: every UNREAD notification (no tight limit --
+      // sidebar/tab badge counts must be exact, and a busy account can
+      // easily have more than 15 total notifications with some unread
+      // ones older than the most recent 15) merged with a handful of
+      // recent ones so the bell dropdown still has content once
+      // everything's read.
+      const [{ data: unread }, { data: recent }] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", sessionUser.id)
+          .eq("is_read", false)
+          .order("created_at", { ascending: false })
+          .limit(200),
+        supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", sessionUser.id)
+          .order("created_at", { ascending: false })
+          .limit(15),
+      ]);
+      const merged = [...(unread || [])];
+      const seenIds = new Set(merged.map((n) => n.id));
+      (recent || []).forEach((n) => {
+        if (!seenIds.has(n.id)) merged.push(n);
+      });
+      merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if (isMounted) setNotifications(merged);
     }
 
     load();
@@ -291,7 +312,7 @@ function DashboardLayoutInner({ children }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setNotifications((prev) => [payload.new, ...prev].slice(0, 15));
+          setNotifications((prev) => [payload.new, ...prev].slice(0, 200));
         }
       )
       .on(
@@ -431,7 +452,7 @@ function DashboardLayoutInner({ children }) {
                   {notifications.length === 0 && (
                     <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
                   )}
-                  {notifications.map((n) => (
+                  {notifications.slice(0, 20).map((n) => (
                     <Link
                       key={n.id}
                       href={n.link || "#"}
