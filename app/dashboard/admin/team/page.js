@@ -16,7 +16,8 @@ const ROLE_LABEL = {
 };
 
 export default function TeamListPage() {
-  const { checked, allowed, user } = useRequireRole(AGENCY_ROLES);
+  const { checked, allowed, user, role } = useRequireRole(ALL_STAFF_ROLES);
+  const isAgency = AGENCY_ROLES.includes(role);
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState(null);
@@ -73,12 +74,14 @@ export default function TeamListPage() {
               ← Back to dashboard
             </a>
           </div>
-          <a
-            href="/dashboard/admin/team/new"
-            className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
-          >
-            + Add Team Member
-          </a>
+          {isAgency && (
+            <a
+              href="/dashboard/admin/team/new"
+              className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition"
+            >
+              + Add Team Member
+            </a>
+          )}
         </div>
 
         {loading && <p className="text-slate-400 text-sm">Loading...</p>}
@@ -100,7 +103,7 @@ export default function TeamListPage() {
                   </p>
                   <p className="text-xs text-slate-400">{ROLE_LABEL[m.role] || m.role}</p>
                 </div>
-                {m.id !== user?.id && (
+                {m.id !== user?.id && (isAgency || AGENCY_ROLES.includes(m.role)) && (
                   <button
                     onClick={() => setDmUser(m)}
                     className="text-xs text-purple-600 hover:underline flex-shrink-0"

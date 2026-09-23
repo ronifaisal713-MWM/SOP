@@ -22,6 +22,7 @@ const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢
 export default function MyTasksPage() {
   const { user, checked } = useRequireAuth();
   const [tasks, setTasks] = useState([]);
+  const [assigneesByTask, setAssigneesByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revisionNoteFor, setRevisionNoteFor] = useState(null);
@@ -54,7 +55,35 @@ export default function MyTasksPage() {
       .order("created_at", { ascending: true });
 
     if (fetchError) setError(fetchError.message);
-    setTasks(data || []);
+    const taskList = data || [];
+    setTasks(taskList);
+
+    const taskIds = taskList.map((t) => t.id);
+    if (taskIds.length > 0) {
+      const { data: assigneeRows } = await supabase
+        .from("task_assignees")
+        .select("task_id, user_id")
+        .in("task_id", taskIds);
+
+      const rows = assigneeRows || [];
+      const userIds = [...new Set(rows.map((r) => r.user_id))];
+      let nameMap = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        (profiles || []).forEach((p) => (nameMap[p.id] = p.full_name));
+      }
+
+      const byTask = {};
+      rows.forEach((r) => {
+        if (!byTask[r.task_id]) byTask[r.task_id] = [];
+        byTask[r.task_id].push(nameMap[r.user_id] || "Unnamed");
+      });
+      setAssigneesByTask(byTask);
+    }
+
     setLoading(false);
   }
 
@@ -166,6 +195,11 @@ export default function MyTasksPage() {
                       className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm text-sm"
                     >
                       <p className="font-medium text-slate-800 mb-1">{t.title}</p>
+                      <p className="text-slate-400 text-xs mb-1 truncate">
+                        {assigneesByTask[t.id]?.length > 0
+                          ? assigneesByTask[t.id].join(", ")
+                          : "Unassigned"}
+                      </p>
                       <p className="text-slate-400 text-xs mb-2">
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}

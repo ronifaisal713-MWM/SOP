@@ -56,6 +56,7 @@ const SIDEBAR_BY_CATEGORY = {
       section: "Clients",
       items: [
         { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+        { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
         { href: "/dashboard/billing", label: "Billing", icon: "💵" },
       ],
@@ -95,6 +96,7 @@ const NAV_BY_CATEGORY = {
   staff: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/admin/clients", label: "Clients" },
+    { href: "/dashboard/admin/team", label: "Team" },
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
@@ -149,6 +151,7 @@ const MOBILE_MORE_BY_CATEGORY = {
     { href: "/dashboard/admin/email-requests", label: "Email Requests" },
   ],
   staff: [
+    { href: "/dashboard/admin/team", label: "Team" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
     { href: "/dashboard/billing", label: "Billing" },
