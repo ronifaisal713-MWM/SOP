@@ -117,7 +117,7 @@ export default function ReportsPage() {
       (timeRows || []).forEach((row) => {
         if (!row.user_id) return;
         if (!byMember[row.user_id]) byMember[row.user_id] = { total: 0, completed: 0, seconds: 0 };
-        byMember[row.user_id].seconds += row.duration_seconds || 0;
+        byMember[row.user_id].seconds += Math.max(0, row.duration_seconds || 0);
       });
 
       setTeamRows(

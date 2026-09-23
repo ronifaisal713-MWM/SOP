@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 function formatDuration(totalSeconds) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
+  // Clamp: a duration is never negative, and rows saved before the
+  // clock-offset fix may hold one.
+  const safe = Math.max(0, totalSeconds || 0);
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
   if (h === 0 && m === 0) return "0m";
   return `${h > 0 ? `${h}h ` : ""}${m}m`;
 }
@@ -34,6 +37,16 @@ export default function TimeTracker({ taskId, currentUser, isStaff }) {
   const [manualHours, setManualHours] = useState("");
   const [manualMinutes, setManualMinutes] = useState("");
   const [manualNotes, setManualNotes] = useState("");
+  // The database stamps started_at with ITS clock, but elapsed time was
+  // being measured against the BROWSER's clock -- if the two disagree
+  // (a machine a couple of minutes behind, say), the difference comes
+  // out negative. Measure the offset once and apply it everywhere we
+  // compare the two.
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+
+  function serverNow() {
+    return Date.now() + clockOffsetMs;
+  }
 
   async function load() {
     setLoading(true);
@@ -77,11 +90,15 @@ export default function TimeTracker({ taskId, currentUser, isStaff }) {
       setElapsed(0);
       return;
     }
-    const tick = () => setElapsed(Math.floor((Date.now() - new Date(activeEntry.started_at).getTime()) / 1000));
+    const tick = () =>
+      setElapsed(
+        Math.max(0, Math.floor((serverNow() - new Date(activeEntry.started_at).getTime()) / 1000))
+      );
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [activeEntry, taskId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEntry, taskId, clockOffsetMs]);
 
   async function handleStart() {
     setError("");
@@ -93,6 +110,7 @@ export default function TimeTracker({ taskId, currentUser, isStaff }) {
       );
       return;
     }
+    const insertedAtBrowser = Date.now();
     const { data, error: insertError } = await supabase
       .from("time_entries")
       .insert({ task_id: taskId, user_id: currentUser.id })
@@ -102,13 +120,20 @@ export default function TimeTracker({ taskId, currentUser, isStaff }) {
       setError(insertError.message);
       return;
     }
+    // The row just came back with the server's own now() in started_at,
+    // and we know roughly when we sent it -- the gap between the two is
+    // the clock offset.
+    setClockOffsetMs(new Date(data.started_at).getTime() - insertedAtBrowser);
     setActiveEntry(data);
   }
 
   async function handleStop() {
     if (!activeEntry) return;
-    const endedAt = new Date();
-    const durationSeconds = Math.floor((endedAt.getTime() - new Date(activeEntry.started_at).getTime()) / 1000);
+    const startedMs = new Date(activeEntry.started_at).getTime();
+    // Clamp at zero: a timer can never have run for negative time, no
+    // matter how far apart the clocks are.
+    const durationSeconds = Math.max(0, Math.floor((serverNow() - startedMs) / 1000));
+    const endedAt = new Date(serverNow());
 
     await supabase
       .from("time_entries")
@@ -160,7 +185,7 @@ export default function TimeTracker({ taskId, currentUser, isStaff }) {
   }
 
   const totalSeconds =
-    entries.reduce((sum, e) => sum + (e.duration_seconds || 0), 0) +
+    entries.reduce((sum, e) => sum + Math.max(0, e.duration_seconds || 0), 0) +
     (activeEntry?.task_id === taskId ? elapsed : 0);
   const isRunningHere = activeEntry?.task_id === taskId;
 
