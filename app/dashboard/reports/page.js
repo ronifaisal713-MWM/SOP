@@ -5,6 +5,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 
+function formatHours(totalSeconds) {
+  if (!totalSeconds) return "0h";
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  if (h === 0) return `${m}m`;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 function startOfMonth() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
@@ -90,10 +98,28 @@ export default function ReportsPage() {
       const byMember = {};
       (assigneeRows || []).forEach((row) => {
         const status = taskStatusMap[row.task_id];
-        if (!byMember[row.user_id]) byMember[row.user_id] = { total: 0, completed: 0 };
+        if (!byMember[row.user_id]) byMember[row.user_id] = { total: 0, completed: 0, seconds: 0 };
         byMember[row.user_id].total += 1;
         if (status === "done" || status === "approved") byMember[row.user_id].completed += 1;
       });
+
+      // Logged time per person -- counted from their own entries, not
+      // from assignment, since someone can log time on a task they're
+      // not formally assigned to.
+      const { data: timeRows } =
+        taskIds.length > 0
+          ? await supabase
+              .from("time_entries")
+              .select("user_id, duration_seconds")
+              .in("task_id", taskIds)
+          : { data: [] };
+
+      (timeRows || []).forEach((row) => {
+        if (!row.user_id) return;
+        if (!byMember[row.user_id]) byMember[row.user_id] = { total: 0, completed: 0, seconds: 0 };
+        byMember[row.user_id].seconds += row.duration_seconds || 0;
+      });
+
       setTeamRows(
         Object.entries(byMember)
           .map(([userId, stats]) => ({ userId, name: teamMap[userId] || "Unnamed", ...stats }))
@@ -225,7 +251,7 @@ export default function ReportsPage() {
                       {teamRows.map((row) => (
                         <div key={row.userId} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
                           <p className="font-medium text-slate-800">{row.name}</p>
-                          <div className="grid grid-cols-2 gap-2 mt-2 text-center">
+                          <div className="grid grid-cols-3 gap-2 mt-2 text-center">
                             <div>
                               <p className="text-sm font-semibold text-slate-700">{row.total}</p>
                               <p className="text-[10px] text-slate-400">Assigned</p>
@@ -233,6 +259,12 @@ export default function ReportsPage() {
                             <div>
                               <p className="text-sm font-semibold text-slate-700">{row.completed}</p>
                               <p className="text-[10px] text-slate-400">Completed</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {formatHours(row.seconds)}
+                              </p>
+                              <p className="text-[10px] text-slate-400">Logged</p>
                             </div>
                           </div>
                         </div>
@@ -247,6 +279,7 @@ export default function ReportsPage() {
                             <th className="px-4 py-3 font-medium">Team Member</th>
                             <th className="px-4 py-3 font-medium">Assigned</th>
                             <th className="px-4 py-3 font-medium">Completed</th>
+                            <th className="px-4 py-3 font-medium">Time Logged</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -255,6 +288,7 @@ export default function ReportsPage() {
                               <td className="px-4 py-3 font-medium text-slate-800">{row.name}</td>
                               <td className="px-4 py-3 text-slate-600">{row.total}</td>
                               <td className="px-4 py-3 text-slate-600">{row.completed}</td>
+                              <td className="px-4 py-3 text-slate-600">{formatHours(row.seconds)}</td>
                             </tr>
                           ))}
                         </tbody>

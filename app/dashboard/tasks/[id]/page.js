@@ -7,6 +7,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import TaskChat from "@/components/TaskChat";
 import DocumentsManager from "@/components/DocumentsManager";
+import TimeTracker from "@/components/TimeTracker";
 
 const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 const STATUS_OPTIONS = [
@@ -259,6 +260,11 @@ export default function TaskDetailPage() {
               </select>
             </div>
           )}
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4 p-4">
+          <h2 className="text-sm font-semibold text-slate-600 mb-3">Time Tracking</h2>
+          <TimeTracker taskId={id} currentUser={user} isStaff={isStaff} />
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm mt-4">
