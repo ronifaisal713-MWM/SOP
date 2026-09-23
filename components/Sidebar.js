@@ -64,7 +64,7 @@ export default function Sidebar({
         ? "/dashboard/tasks"
         : null;
     return notifications.filter((n) => {
-      if (!n.is_read || !n.link) return false;
+      if (n.is_read || !n.link) return false;
       const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
       const matchesAlt = altHref && n.link.startsWith(altHref + "/");
       return matchesHref || matchesAlt;
