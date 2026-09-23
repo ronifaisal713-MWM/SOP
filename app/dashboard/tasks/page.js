@@ -291,14 +291,14 @@ export default function TasksKanbanPage() {
 
       {openDetailsTask && (
         <div
-          className="fixed inset-0 bg-black/30 flex items-start justify-center z-40 px-4 py-8 overflow-y-auto"
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-40 px-4 py-8"
           onClick={() => setOpenDetailsTask(null)}
         >
           <div
-            className="bg-slate-50 rounded-lg shadow-2xl w-full max-w-2xl my-auto"
+            className="bg-slate-50 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 rounded-t-lg sticky top-0 z-10">
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 rounded-t-lg flex-shrink-0">
               <h2 className="text-sm font-semibold text-slate-700 truncate min-w-0">Task Details</h2>
               <button
                 onClick={() => setOpenDetailsTask(null)}
@@ -307,7 +307,7 @@ export default function TasksKanbanPage() {
                 ×
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-4 overflow-y-auto min-h-0 flex-1">
               <TaskDetailsPanel
                 taskId={openDetailsTask.id}
                 currentUser={user}
