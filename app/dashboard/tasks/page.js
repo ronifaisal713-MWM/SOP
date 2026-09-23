@@ -68,6 +68,7 @@ export default function TasksKanbanPage() {
   const [tasks, setTasks] = useState([]);
   const [profileMap, setProfileMap] = useState({});
   const [assigneesByTask, setAssigneesByTask] = useState({});
+  const [checklistByTask, setChecklistByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openChatTask, setOpenChatTask] = useState(null);
@@ -129,6 +130,21 @@ export default function TasksKanbanPage() {
         byTask[r.task_id].push(map[r.user_id] || "Unnamed");
       });
       setAssigneesByTask(byTask);
+
+      // Checklist progress, so the board shows how far along each task
+      // is without having to open it.
+      const { data: checklistRows } = await supabase
+        .from("task_checklist_items")
+        .select("task_id, is_done")
+        .in("task_id", taskIds);
+
+      const progress = {};
+      (checklistRows || []).forEach((c) => {
+        if (!progress[c.task_id]) progress[c.task_id] = { done: 0, total: 0 };
+        progress[c.task_id].total += 1;
+        if (c.is_done) progress[c.task_id].done += 1;
+      });
+      setChecklistByTask(progress);
     }
 
     setLoading(false);
@@ -205,6 +221,20 @@ export default function TasksKanbanPage() {
                       <p className="text-slate-400 text-xs mb-2">
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
+                        {checklistByTask[t.id] && (
+                          <>
+                            {" · "}
+                            <span
+                              className={
+                                checklistByTask[t.id].done === checklistByTask[t.id].total
+                                  ? "text-green-600"
+                                  : ""
+                              }
+                            >
+                              ☑ {checklistByTask[t.id].done}/{checklistByTask[t.id].total}
+                            </span>
+                          </>
+                        )}
                       </p>
                       <div className="flex gap-3 mb-2">
                         <button
