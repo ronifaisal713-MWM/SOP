@@ -51,11 +51,19 @@ export default function Sidebar({
 
   // "Dashboard"/"Home" is every category's landing page, and would
   // match almost any notification link by prefix -- never badge it.
+  // Chat notifications for staff/agency link to /dashboard/clients/{id}
+  // (the workspace page), not /dashboard/admin/clients (the list page)
+  // this nav item points at -- treat that as an alias so the badge
+  // actually reflects unread client-chat activity.
   function badgeCountFor(item) {
     if (!notifications || item.label === "Dashboard") return 0;
-    return notifications.filter(
-      (n) => !n.is_read && n.link && (n.link === item.href || n.link.startsWith(item.href + "/"))
-    ).length;
+    const altHref = item.href === "/dashboard/admin/clients" ? "/dashboard/clients" : null;
+    return notifications.filter((n) => {
+      if (!n.is_read || !n.link) return false;
+      const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
+      const matchesAlt = altHref && n.link.startsWith(altHref + "/");
+      return matchesHref || matchesAlt;
+    }).length;
   }
 
   return (

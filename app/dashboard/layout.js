@@ -517,11 +517,15 @@ function DashboardLayoutInner({ children }) {
         >
           {mobilePrimary.map((item) => {
             const active = pathname === item.href;
+            const altHref = item.href === "/dashboard/admin/clients" ? "/dashboard/clients" : null;
             const badge =
               item.label !== "Home"
-                ? notifications.filter(
-                    (n) => !n.is_read && n.link && (n.link === item.href || n.link.startsWith(item.href + "/"))
-                  ).length
+                ? notifications.filter((n) => {
+                    if (n.is_read || !n.link) return false;
+                    const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
+                    const matchesAlt = altHref && n.link.startsWith(altHref + "/");
+                    return matchesHref || matchesAlt;
+                  }).length
                 : 0;
             return (
               <Link
