@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole } from "@/lib/roleCategory";
@@ -387,35 +388,35 @@ function DashboardLayoutInner({ children }) {
                     <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
                   )}
                   {notifications.map((n) => (
-                    <a
+                    <Link
                       key={n.id}
                       href={n.link || "#"}
                       className="block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
                     >
                       <p className="text-xs font-medium text-slate-700">{n.title}</p>
                       {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
 
               {isPlatformOwner && effectiveCategory === "agency" && (
-                <a
+                <Link
                   href="/dashboard/platform"
                   className="text-sm text-purple-600 hover:underline hidden sm:inline md:hidden"
                   title="Switch to your Platform Owner dashboard"
                 >
                   🔁 Platform View
-                </a>
+                </Link>
               )}
 
-              <a
+              <Link
                 href="/dashboard/profile"
                 className="text-sm text-slate-500 hover:text-brand transition md:hidden"
                 title="Profile"
               >
                 👤 <span className="hidden sm:inline">Profile</span>
-              </a>
+              </Link>
 
               <button
                 onClick={handleSignOut}
@@ -523,7 +524,7 @@ function DashboardLayoutInner({ children }) {
                   ).length
                 : 0;
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className={`flex-1 flex flex-col items-center justify-center py-2 text-[11px] gap-0.5 ${
@@ -539,7 +540,7 @@ function DashboardLayoutInner({ children }) {
                   )}
                 </span>
                 {item.label}
-              </a>
+              </Link>
             );
           })}
 
@@ -571,21 +572,21 @@ function DashboardLayoutInner({ children }) {
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
             <div className="space-y-1">
               {mobileMore.map((item) => (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
                   className="block px-3 py-3 text-sm text-slate-700 rounded-md hover:bg-slate-50"
                 >
                   {item.label}
-                </a>
+                </Link>
               ))}
               {isPlatformOwner && effectiveCategory === "agency" && (
-                <a
+                <Link
                   href="/dashboard/platform"
                   className="block px-3 py-3 text-sm text-purple-600 rounded-md hover:bg-slate-50"
                 >
                   🔁 Platform View
-                </a>
+                </Link>
               )}
               <button
                 onClick={handleSignOut}

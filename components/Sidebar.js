@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const ROLE_LABEL = {
   super_admin: "Owner",
@@ -98,7 +99,7 @@ export default function Sidebar({
               const active = pathname === item.href;
               const badge = badgeCountFor(item);
               return (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
                   title={collapsed ? item.label : undefined}
@@ -120,7 +121,7 @@ export default function Sidebar({
                       {badge > 9 ? "9+" : badge}
                     </span>
                   )}
-                </a>
+                </Link>
               );
             })}
           </div>
@@ -129,25 +130,25 @@ export default function Sidebar({
 
       <div className="border-t border-white/10 px-4 py-3 flex-shrink-0">
         {isPlatformOwner && showPlatformSwitch && (
-          <a
+          <Link
             href="/dashboard/platform"
             title={collapsed ? "Platform View" : undefined}
             className="flex items-center gap-2 text-xs text-purple-300 hover:text-purple-200 mb-3"
           >
             <span>🔁</span>
             {!collapsed && <span>Platform View</span>}
-          </a>
+          </Link>
         )}
 
         {showAgencySwitch && (
-          <a
+          <Link
             href="/dashboard"
             title={collapsed ? "Agency View" : undefined}
             className="flex items-center gap-2 text-xs text-purple-300 hover:text-purple-200 mb-3"
           >
             <span>🏢</span>
             {!collapsed && <span>Agency View</span>}
-          </a>
+          </Link>
         )}
 
         <div className="flex items-center gap-2">
@@ -165,9 +166,9 @@ export default function Sidebar({
         </div>
 
         <div className={`flex gap-3 mt-2 text-xs ${collapsed ? "flex-col items-center" : ""}`}>
-          <a href="/dashboard/profile" className="text-slate-400 hover:text-white" title="Profile">
+          <Link href="/dashboard/profile" className="text-slate-400 hover:text-white" title="Profile">
             {collapsed ? "👤" : "Profile"}
-          </a>
+          </Link>
           <button onClick={onSignOut} className="text-slate-400 hover:text-white" title="Sign Out">
             {collapsed ? "🚪" : "Sign Out"}
           </button>
