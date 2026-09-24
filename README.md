@@ -117,25 +117,28 @@ schema, basic pages) to build on.
 ## Push notifications
 
 In-app alerts (sound + a browser popup when the tab isn't focused)
-work with no setup. Push -- notifications arriving on a phone with the
-app fully closed -- needs three things wired up:
+work with no setup at all.
 
-1. **Generate a VAPID key pair** (once):
-   ```bash
-   npx web-push generate-vapid-keys
-   ```
+Push -- notifications arriving on a phone with the app fully closed --
+needs four environment variables in Vercel, then a redeploy. No CLI or
+local tooling required; everything deploys from git.
 
-2. **Deploy the Edge Function and give it the keys**:
-   ```bash
-   supabase functions deploy send-push
-   supabase secrets set \
-     VAPID_PUBLIC_KEY=<public key from step 1> \
-     VAPID_PRIVATE_KEY=<private key from step 1> \
-     VAPID_SUBJECT=mailto:you@yourdomain.com
-   ```
+In Vercel -> Settings -> Environment Variables:
 
-3. **Add the public key to Vercel** as `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
-   (same value as `VAPID_PUBLIC_KEY`), then redeploy.
+| Key | Type | Value |
+|---|---|---|
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Config | your VAPID public key |
+| `VAPID_PRIVATE_KEY` | Secret | your VAPID private key |
+| `VAPID_SUBJECT` | Config | `mailto:you@yourdomain.com` |
+| `PUSH_TRIGGER_SECRET` | Secret | any long random string |
+
+Then run `supabase/migration_037_push_trigger.sql`, replacing the
+placeholder in it with the same `PUSH_TRIGGER_SECRET` value. That
+secret is what lets `/api/send-push` verify a request really came from
+the database trigger rather than from someone POSTing at the endpoint.
+
+A VAPID key pair can be generated with `npx web-push generate-vapid-keys`
+if you have Node locally, or with any online VAPID generator.
 
 Note on iOS: Safari only delivers Web Push to sites the person has
 added to their home screen (iOS 16.4+). Android and desktop browsers
