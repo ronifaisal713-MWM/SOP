@@ -64,7 +64,11 @@ Billing.
    `supabase/migration_032_billing.sql`, then
    `supabase/migration_033_time_tracking.sql`, then
    `supabase/migration_034_task_checklist.sql`, then
-   `supabase/migration_035_message_reactions.sql`.
+   `supabase/migration_035_message_reactions.sql`, then
+   `supabase/migration_036_push_subscriptions.sql`, then
+   `supabase/migration_037_push_trigger.sql` (push also needs the
+   Edge Function deployed and VAPID keys set -- see "Push
+   notifications" below).
 5. Run the dev server:
    ```bash
    npm run dev
@@ -109,3 +113,30 @@ schema, basic pages) to build on.
 - **Phase 2:** content calendar, meetings, monthly reports, invoicing, client
   feedback, SOP library, service requests, email/WhatsApp notifications.
 - **Phase 3 (AI):** requirement → task suggestions, AI client assistant.
+
+## Push notifications
+
+In-app alerts (sound + a browser popup when the tab isn't focused)
+work with no setup. Push -- notifications arriving on a phone with the
+app fully closed -- needs three things wired up:
+
+1. **Generate a VAPID key pair** (once):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+2. **Deploy the Edge Function and give it the keys**:
+   ```bash
+   supabase functions deploy send-push
+   supabase secrets set \
+     VAPID_PUBLIC_KEY=<public key from step 1> \
+     VAPID_PRIVATE_KEY=<private key from step 1> \
+     VAPID_SUBJECT=mailto:you@yourdomain.com
+   ```
+
+3. **Add the public key to Vercel** as `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+   (same value as `VAPID_PUBLIC_KEY`), then redeploy.
+
+Note on iOS: Safari only delivers Web Push to sites the person has
+added to their home screen (iOS 16.4+). Android and desktop browsers
+have no such restriction.

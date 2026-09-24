@@ -9,6 +9,8 @@ import ChatWidget from "@/components/ChatWidget";
 import ClientChat from "@/components/ClientChat";
 import StaffChat from "@/components/StaffChat";
 import Sidebar from "@/components/Sidebar";
+import { playNotificationSound, showBrowserNotification } from "@/lib/notificationAlerts";
+import { registerServiceWorker, subscribeToPush, isPushSubscribed } from "@/lib/pushNotifications";
 
 // Desktop sidebar navigation, grouped into sections with icons.
 const SIDEBAR_BY_CATEGORY = {
@@ -181,6 +183,8 @@ function DashboardLayoutInner({ children }) {
   const [checked, setChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [pendingMentionsCount, setPendingMentionsCount] = useState(0);
+  const [showEnableAlerts, setShowEnableAlerts] = useState(false);
+  const [enablingAlerts, setEnablingAlerts] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const pathname = usePathname();
@@ -327,6 +331,12 @@ function DashboardLayoutInner({ children }) {
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 200));
+          playNotificationSound();
+          showBrowserNotification({
+            title: payload.new.title,
+            body: payload.new.body,
+            url: payload.new.link,
+          });
         }
       )
       .on(
@@ -340,6 +350,53 @@ function DashboardLayoutInner({ children }) {
 
     return () => supabase.removeChannel(channel);
   }, [user]);
+
+  // Register the service worker (needed for push when the app is
+  // closed) and work out whether to offer turning alerts on. Only
+  // prompts when permission is still "default" -- never nags someone
+  // who already decided either way, and remembers a dismissal.
+  useEffect(() => {
+    if (!user) return;
+
+    registerServiceWorker();
+
+    async function check() {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission !== "default") {
+        // Already granted: make sure THIS device is registered for
+        // push -- a new phone won't be, even though permission is
+        // remembered per-origin.
+        if (Notification.permission === "granted") {
+          const subscribed = await isPushSubscribed();
+          if (!subscribed) subscribeToPush(user.id);
+        }
+        return;
+      }
+      try {
+        if (localStorage.getItem("alertsPromptDismissed") === "1") return;
+      } catch {
+        // localStorage unavailable -- just show the prompt.
+      }
+      setShowEnableAlerts(true);
+    }
+    check();
+  }, [user]);
+
+  async function handleEnableAlerts() {
+    setEnablingAlerts(true);
+    await subscribeToPush(user.id);
+    setEnablingAlerts(false);
+    setShowEnableAlerts(false);
+  }
+
+  function dismissAlertsPrompt() {
+    try {
+      localStorage.setItem("alertsPromptDismissed", "1");
+    } catch {
+      // Fine -- it'll just ask again next session.
+    }
+    setShowEnableAlerts(false);
+  }
 
   // Pending @mentions are tracked separately from the generic
   // notifications system on purpose: opening the bell marks every
@@ -506,6 +563,27 @@ function DashboardLayoutInner({ children }) {
             </div>
           )}
         </header>
+
+        {checked && showEnableAlerts && (
+          <div className="bg-brand/5 border-b border-brand/20 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-xs text-slate-600">
+              🔔 Turn on alerts to get a sound and a notification when something needs you -- even
+              when Agency OS is closed.
+            </p>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={handleEnableAlerts}
+                disabled={enablingAlerts}
+                className="text-xs px-3 py-1.5 rounded-md bg-brand text-white font-medium hover:bg-brand-light transition disabled:opacity-60"
+              >
+                {enablingAlerts ? "Enabling..." : "Enable"}
+              </button>
+              <button onClick={dismissAlertsPrompt} className="text-xs text-slate-400 hover:underline">
+                Not now
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="pb-20 md:pb-0">
           {checked ? (
