@@ -185,6 +185,7 @@ function DashboardLayoutInner({ children }) {
   const [pendingMentionsCount, setPendingMentionsCount] = useState(0);
   const [showEnableAlerts, setShowEnableAlerts] = useState(false);
   const [enablingAlerts, setEnablingAlerts] = useState(false);
+  const [alertsError, setAlertsError] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const pathname = usePathname();
@@ -384,9 +385,25 @@ function DashboardLayoutInner({ children }) {
 
   async function handleEnableAlerts() {
     setEnablingAlerts(true);
-    await subscribeToPush(user.id);
+    setAlertsError("");
+    const result = await subscribeToPush(user.id);
     setEnablingAlerts(false);
-    setShowEnableAlerts(false);
+
+    if (result?.ok) {
+      setShowEnableAlerts(false);
+      return;
+    }
+
+    // Keep the banner up and say what went wrong -- silently closing it
+    // would leave someone believing alerts are on when they aren't.
+    const messages = {
+      unsupported: "This browser doesn't support push notifications.",
+      "not-configured": "Push isn't set up on the server yet.",
+      denied: "Notifications were blocked. Allow them in your browser settings, then try again.",
+      "sw-failed": "Couldn't start the background service. Try reloading the page.",
+      "bad-subscription": "The browser returned an incomplete subscription. Try reloading.",
+    };
+    setAlertsError(messages[result?.reason] || result?.reason || "Couldn't enable alerts.");
   }
 
   function dismissAlertsPrompt() {
@@ -569,6 +586,7 @@ function DashboardLayoutInner({ children }) {
             <p className="text-xs text-slate-600">
               🔔 Turn on alerts to get a sound and a notification when something needs you -- even
               when Agency OS is closed.
+              {alertsError && <span className="block text-red-600 mt-1">{alertsError}</span>}
             </p>
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
