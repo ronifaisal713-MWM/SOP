@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import ChatWidget from "@/components/ChatWidget";
 import TaskChat from "@/components/TaskChat";
+import TaskDetailsPanel from "@/components/TaskDetailsPanel";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -30,6 +31,7 @@ export default function MyTasksPage() {
   const [revisionNote, setRevisionNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [openChatTask, setOpenChatTask] = useState(null);
+  const [openDetailsTask, setOpenDetailsTask] = useState(null);
 
   useEffect(() => {
     if (!checked || !user) return;
@@ -225,27 +227,35 @@ export default function MyTasksPage() {
                         {PRIORITY_ICON[t.priority] || ""} {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                       </p>
-                      <button
-                        onClick={() => {
-                          setOpenChatTask(t);
-                          setUnreadByTask((prev) => ({ ...prev, [t.id]: 0 }));
-                          supabase
-                            .from("notifications")
-                            .update({ is_read: true })
-                            .eq("user_id", user.id)
-                            .eq("is_read", false)
-                            .ilike("link", `/dashboard/tasks/${t.id}%`)
-                            .then(() => {});
-                        }}
-                        className="text-xs text-brand hover:underline flex items-center gap-1 mb-2"
-                      >
-                        💬 View &amp; Chat
-                        {unreadByTask[t.id] > 0 && (
-                          <span className="bg-red-500 text-white text-[9px] rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-1 font-medium">
-                            {unreadByTask[t.id] > 9 ? "9+" : unreadByTask[t.id]}
-                          </span>
-                        )}
-                      </button>
+                      <div className="flex gap-3 mb-2">
+                        <button
+                          onClick={() => {
+                            setOpenChatTask(t);
+                            setUnreadByTask((prev) => ({ ...prev, [t.id]: 0 }));
+                            supabase
+                              .from("notifications")
+                              .update({ is_read: true })
+                              .eq("user_id", user.id)
+                              .eq("is_read", false)
+                              .ilike("link", `/dashboard/tasks/${t.id}%`)
+                              .then(() => {});
+                          }}
+                          className="text-xs text-brand hover:underline flex items-center gap-1"
+                        >
+                          💬 Chat
+                          {unreadByTask[t.id] > 0 && (
+                            <span className="bg-red-500 text-white text-[9px] rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-1 font-medium">
+                              {unreadByTask[t.id] > 9 ? "9+" : unreadByTask[t.id]}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setOpenDetailsTask(t)}
+                          className="text-xs text-slate-400 hover:underline"
+                        >
+                          Details
+                        </button>
+                      </div>
 
                       {t.status === "client_review" && (
                         <div className="border-t border-slate-100 pt-2 mt-2 space-y-2">
@@ -319,6 +329,34 @@ export default function MyTasksPage() {
         >
           <TaskChat taskId={openChatTask.id} currentUser={user} isStaff={false} />
         </ChatWidget>
+      )}
+
+      {openDetailsTask && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-40 px-4 py-8"
+          onClick={() => setOpenDetailsTask(null)}
+        >
+          <div
+            className="bg-slate-50 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 rounded-t-lg flex-shrink-0">
+              <h2 className="text-sm font-semibold text-slate-700 truncate min-w-0">Task Details</h2>
+              <button
+                onClick={() => setOpenDetailsTask(null)}
+                className="text-slate-400 hover:text-slate-700 text-lg leading-none flex-shrink-0 ml-2"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto min-h-0 flex-1">
+              {/* isStaff false -- the panel renders read-only: no status
+                  dropdown, no assignee editing, no checklist ticking,
+                  no timer controls. */}
+              <TaskDetailsPanel taskId={openDetailsTask.id} currentUser={user} isStaff={false} />
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
