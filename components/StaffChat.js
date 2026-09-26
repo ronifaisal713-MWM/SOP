@@ -201,11 +201,11 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
           </div>
         )}
 
-        <div className="flex gap-2 items-center">
-          <button type="button" onClick={() => setShowEmoji((s) => !s)} className="text-lg px-1" title="Emoji">
+        <div className="flex gap-1 sm:gap-2 items-center">
+          <button type="button" onClick={() => setShowEmoji((s) => !s)} className="text-lg px-0.5 sm:px-1 flex-shrink-0" title="Emoji">
             😀
           </button>
-          <label className="text-lg px-1 cursor-pointer" title="Attach file">
+          <label className="text-lg px-0.5 sm:px-1 cursor-pointer flex-shrink-0" title="Attach file">
             📎
             <input
               type="file"
@@ -226,12 +226,12 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Type a private message..."
-            className="flex-1 border border-slate-300 rounded-md px-3 py-2 text-sm"
+            className="flex-1 min-w-0 border border-slate-300 rounded-md px-3 py-2 text-sm"
           />
           <button
             type="submit"
             disabled={sending || (!body.trim() && !file)}
-            className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition disabled:opacity-50 flex-shrink-0"
           >
             Send
           </button>

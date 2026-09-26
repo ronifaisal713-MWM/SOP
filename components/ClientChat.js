@@ -404,16 +404,16 @@ export default function ClientChat({
           </div>
         )}
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-1 sm:gap-2 items-center">
           <button
             type="button"
             onClick={() => setShowEmoji((s) => !s)}
-            className="text-lg px-1"
+            className="text-lg px-0.5 sm:px-1 flex-shrink-0"
             title="Emoji"
           >
             😀
           </button>
-          <label className="text-lg px-1 cursor-pointer" title="Attach file">
+          <label className="text-lg px-0.5 sm:px-1 cursor-pointer flex-shrink-0" title="Attach file">
             📎
             <input
               type="file"
@@ -434,7 +434,7 @@ export default function ClientChat({
             <button
               type="button"
               onClick={() => setShowMentionPicker((s) => !s)}
-              className="text-lg px-1"
+              className="text-lg px-0.5 sm:px-1 flex-shrink-0"
               title="Mention someone"
             >
               @
@@ -449,12 +449,12 @@ export default function ClientChat({
                 : "Type a message..."
             }
             disabled={tab === "personal" && !personalRecipientId}
-            className="flex-1 border border-slate-300 rounded-md px-3 py-2 text-sm disabled:bg-slate-100"
+            className="flex-1 min-w-0 border border-slate-300 rounded-md px-3 py-2 text-sm disabled:bg-slate-100"
           />
           <button
             type="submit"
             disabled={sending || (!body.trim() && !file) || (tab === "personal" && !personalRecipientId)}
-            className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-light transition disabled:opacity-50 flex-shrink-0"
           >
             Send
           </button>
