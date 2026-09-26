@@ -23,6 +23,7 @@ export default function MyTasksPage() {
   const { user, checked } = useRequireAuth();
   const [tasks, setTasks] = useState([]);
   const [assigneesByTask, setAssigneesByTask] = useState({});
+  const [unreadByTask, setUnreadByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revisionNoteFor, setRevisionNoteFor] = useState(null);
@@ -34,14 +35,17 @@ export default function MyTasksPage() {
     if (!checked || !user) return;
     loadTasks();
 
-    // Visiting this board is exactly "seeing there's a task update" --
-    // clear the sidebar/tab badge without waiting for the bell.
+    // Visiting this board clears the sidebar/tab badge for status
+    // updates -- but not message ones, which drive the per-card chat
+    // badges and only clear when that chat is actually opened.
     supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("user_id", user.id)
       .eq("is_read", false)
       .ilike("link", "/dashboard/tasks%")
+      .not("title", "ilike", "%message%")
+      .not("title", "ilike", "%mentioned%")
       .then(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user]);
@@ -82,6 +86,23 @@ export default function MyTasksPage() {
         byTask[r.task_id].push(nameMap[r.user_id] || "Unnamed");
       });
       setAssigneesByTask(byTask);
+
+      // Unread chat per task for this person, read from their own
+      // notifications since "unread" is inherently per-person.
+      const { data: unreadNotifs } = await supabase
+        .from("notifications")
+        .select("link")
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .ilike("link", "/dashboard/tasks/%");
+
+      const unread = {};
+      (unreadNotifs || []).forEach((n) => {
+        const taskIdFromLink = n.link.split("/dashboard/tasks/")[1]?.split(/[?#]/)[0];
+        if (!taskIdFromLink) return;
+        unread[taskIdFromLink] = (unread[taskIdFromLink] || 0) + 1;
+      });
+      setUnreadByTask(unread);
     }
 
     setLoading(false);
@@ -205,10 +226,25 @@ export default function MyTasksPage() {
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                       </p>
                       <button
-                        onClick={() => setOpenChatTask(t)}
-                        className="text-xs text-brand hover:underline block mb-2"
+                        onClick={() => {
+                          setOpenChatTask(t);
+                          setUnreadByTask((prev) => ({ ...prev, [t.id]: 0 }));
+                          supabase
+                            .from("notifications")
+                            .update({ is_read: true })
+                            .eq("user_id", user.id)
+                            .eq("is_read", false)
+                            .ilike("link", `/dashboard/tasks/${t.id}%`)
+                            .then(() => {});
+                        }}
+                        className="text-xs text-brand hover:underline flex items-center gap-1 mb-2"
                       >
                         💬 View &amp; Chat
+                        {unreadByTask[t.id] > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-1 font-medium">
+                            {unreadByTask[t.id] > 9 ? "9+" : unreadByTask[t.id]}
+                          </span>
+                        )}
                       </button>
 
                       {t.status === "client_review" && (

@@ -71,6 +71,7 @@ export default function TasksKanbanPage() {
   const [assigneesByTask, setAssigneesByTask] = useState({});
   const [checklistByTask, setChecklistByTask] = useState({});
   const [runningByTask, setRunningByTask] = useState({});
+  const [unreadByTask, setUnreadByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openChatTask, setOpenChatTask] = useState(null);
@@ -80,10 +81,12 @@ export default function TasksKanbanPage() {
     if (!checked || !allowed) return;
     loadTasks();
 
-    // Visiting the board is exactly "seeing there's a new/updated task" --
-    // clear the sidebar/tab badge for it without waiting for the bell.
-    // (Deliberately does NOT touch pending @mention acknowledgments --
-    // those only clear via the ✓ button in the chat itself.)
+    // Visiting the board clears the sidebar "Task Board" badge for
+    // status/assignment notices -- but deliberately NOT message ones.
+    // Those drive the per-card chat badges, and merely glancing at the
+    // board isn't reading the messages; those clear when their chat is
+    // actually opened. (Mention acknowledgments are untouched either
+    // way -- they only clear via the ✓ in the chat itself.)
     if (user) {
       supabase
         .from("notifications")
@@ -91,6 +94,8 @@ export default function TasksKanbanPage() {
         .eq("user_id", user.id)
         .eq("is_read", false)
         .ilike("link", "/dashboard/tasks%")
+        .not("title", "ilike", "%message%")
+        .not("title", "ilike", "%mentioned%")
         .then(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,6 +199,25 @@ export default function TasksKanbanPage() {
         running[r.task_id].push(map[r.user_id] || "Someone");
       });
       setRunningByTask(running);
+
+      // Unread chat per task, for THIS person. Read from their own
+      // notifications rather than the messages table, since "unread"
+      // is inherently per-person and that's where it's already
+      // tracked -- message notifications link to /dashboard/tasks/{id}.
+      const { data: unreadNotifs } = await supabase
+        .from("notifications")
+        .select("link")
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .ilike("link", "/dashboard/tasks/%");
+
+      const unread = {};
+      (unreadNotifs || []).forEach((n) => {
+        const taskIdFromLink = n.link.split("/dashboard/tasks/")[1]?.split(/[?#]/)[0];
+        if (!taskIdFromLink) return;
+        unread[taskIdFromLink] = (unread[taskIdFromLink] || 0) + 1;
+      });
+      setUnreadByTask(unread);
     }
 
     setLoading(false);
@@ -298,10 +322,28 @@ export default function TasksKanbanPage() {
                       </p>
                       <div className="flex gap-3 mb-2">
                         <button
-                          onClick={() => setOpenChatTask(t)}
-                          className="text-xs text-brand hover:underline"
+                          onClick={() => {
+                            setOpenChatTask(t);
+                            // Opening the chat IS reading it -- clear
+                            // this task's badge without waiting for the
+                            // bell to be opened.
+                            setUnreadByTask((prev) => ({ ...prev, [t.id]: 0 }));
+                            supabase
+                              .from("notifications")
+                              .update({ is_read: true })
+                              .eq("user_id", user.id)
+                              .eq("is_read", false)
+                              .ilike("link", `/dashboard/tasks/${t.id}%`)
+                              .then(() => {});
+                          }}
+                          className="text-xs text-brand hover:underline flex items-center gap-1"
                         >
                           💬 Chat
+                          {unreadByTask[t.id] > 0 && (
+                            <span className="bg-red-500 text-white text-[9px] rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-1 font-medium">
+                              {unreadByTask[t.id] > 9 ? "9+" : unreadByTask[t.id]}
+                            </span>
+                          )}
                         </button>
                         <button
                           onClick={() => setOpenDetailsTask(t)}
