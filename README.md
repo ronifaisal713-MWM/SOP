@@ -69,7 +69,8 @@ Billing.
    `supabase/migration_037_push_trigger.sql`, then
    `supabase/migration_038_fix_self_notifications.sql`, then
    `supabase/migration_039_staff_dm_deep_link.sql`, then
-   `supabase/migration_040_document_notifications.sql` (push also needs the
+   `supabase/migration_040_document_notifications.sql`, then
+   `supabase/migration_041_block_self_notifications.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:
