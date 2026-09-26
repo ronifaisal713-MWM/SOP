@@ -4,13 +4,30 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
+import ChatWidget from "@/components/ChatWidget";
+import ClientChat from "@/components/ClientChat";
 
 export default function ClientsListPage() {
-  const { checked, allowed, role } = useRequireRole(ALL_STAFF_ROLES);
+  const { checked, allowed, role, user } = useRequireRole(ALL_STAFF_ROLES);
   const isAgency = AGENCY_ROLES.includes(role);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [chatClient, setChatClient] = useState(null);
+  const [chatContacts, setChatContacts] = useState([]);
+
+  // ClientChat needs the client's contacts to offer the Personal tab
+  // (Owner <-> one specific contact) -- fetch them when a chat opens
+  // rather than for every client up front.
+  async function openChat(client) {
+    setChatClient(client);
+    setChatContacts([]);
+    const { data } = await supabase
+      .from("client_users")
+      .select("id, full_name")
+      .eq("client_id", client.id);
+    setChatContacts(data || []);
+  }
 
   useEffect(() => {
     if (!checked || !allowed) return;
@@ -81,6 +98,12 @@ export default function ClientsListPage() {
                   <p className="text-xs text-slate-500 mt-1">{c.contact_person || "-"}</p>
                   <p className="text-xs text-slate-400 truncate">{c.email || "-"}</p>
                   <div className="flex items-center gap-4 mt-3">
+                    <button
+                      onClick={() => openChat(c)}
+                      className="text-purple-600 text-xs hover:underline"
+                    >
+                      💬 Message
+                    </button>
                     <a href={`/dashboard/clients/${c.id}`} className="text-brand text-xs hover:underline">
                       Switch to Client →
                     </a>
@@ -106,6 +129,7 @@ export default function ClientsListPage() {
                     <th className="px-4 py-3 font-medium">Contact</th>
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Chat</th>
                     <th className="px-4 py-3 font-medium">Open</th>
                     {isAgency && <th className="px-4 py-3 font-medium">Team</th>}
                   </tr>
@@ -120,6 +144,14 @@ export default function ClientsListPage() {
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                           {c.status}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => openChat(c)}
+                          className="text-purple-600 text-xs hover:underline"
+                        >
+                          💬 Message
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <a
@@ -147,6 +179,26 @@ export default function ClientsListPage() {
           </>
         )}
       </div>
+
+      {chatClient && user && (
+        <ChatWidget
+          title={`💬 ${chatClient.company_name}`}
+          open={true}
+          onToggle={() => setChatClient(null)}
+          onClose={() => setChatClient(null)}
+        >
+          {/* Opens on Public -- the tab the client can actually see,
+              which is the point of messaging them from here. Internal
+              and Personal are still reachable via the tabs inside. */}
+          <ClientChat
+            clientId={chatClient.id}
+            currentUser={user}
+            viewerRole={role}
+            contacts={chatContacts}
+            initialTab="public"
+          />
+        </ChatWidget>
+      )}
     </main>
   );
 }
