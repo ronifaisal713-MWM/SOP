@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
@@ -15,9 +16,11 @@ const ROLE_LABEL = {
   employee: "Employee",
 };
 
-export default function TeamListPage() {
+function TeamListInner() {
   const { checked, allowed, user, role } = useRequireRole(ALL_STAFF_ROLES);
   const isAgency = AGENCY_ROLES.includes(role);
+  const searchParams = useSearchParams();
+  const openDmId = searchParams.get("openDm");
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState(null);
@@ -30,8 +33,17 @@ export default function TeamListPage() {
       .select("id, full_name, role")
       .in("role", ALL_STAFF_ROLES)
       .then(({ data }) => {
-        setTeam(data || []);
+        const rows = data || [];
+        setTeam(rows);
         setLoading(false);
+
+        // Arrived from a "New private message" notification -- open
+        // that conversation straight away rather than leaving the
+        // person to work out who messaged them.
+        if (openDmId) {
+          const match = rows.find((m) => m.id === openDmId);
+          if (match) setDmUser(match);
+        }
       });
 
     supabase
@@ -40,7 +52,7 @@ export default function TeamListPage() {
       .eq("id", user.id)
       .single()
       .then(({ data }) => setOrganizationId(data?.organization_id || null));
-  }, [checked, allowed, user]);
+  }, [checked, allowed, user, openDmId]);
 
   if (!checked) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
@@ -128,5 +140,17 @@ export default function TeamListPage() {
         </ChatWidget>
       )}
     </main>
+  );
+}
+
+// useSearchParams (for the ?openDm= deep link) needs a Suspense
+// boundary during static generation.
+export default function TeamListPage() {
+  return (
+    <Suspense
+      fallback={<main className="flex items-center justify-center py-20 text-slate-400">Loading...</main>}
+    >
+      <TeamListInner />
+    </Suspense>
   );
 }

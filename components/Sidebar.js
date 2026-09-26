@@ -55,8 +55,11 @@ export default function Sidebar({
   // (the workspace page), not /dashboard/admin/clients (the list page)
   // this nav item points at -- treat that as an alias so the badge
   // actually reflects unread client-chat activity.
-  function badgeCountFor(item) {
-    if (!notifications || item.label === "Dashboard") return 0;
+  // Returns the matching unread notifications, not just a count, so
+  // the nav item can show WHAT is waiting rather than a bare number
+  // the person has to go hunting for.
+  function badgeItemsFor(item) {
+    if (!notifications || item.label === "Dashboard") return [];
     const altHref =
       item.href === "/dashboard/admin/clients"
         ? "/dashboard/clients"
@@ -68,7 +71,20 @@ export default function Sidebar({
       const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
       const matchesAlt = altHref && n.link.startsWith(altHref + "/");
       return matchesHref || matchesAlt;
-    }).length;
+    });
+  }
+
+  // "2 New message, 1 You were mentioned" -- grouped so a long list
+  // doesn't turn into an unreadable tooltip.
+  function badgeTooltip(items) {
+    const counts = {};
+    items.forEach((n) => {
+      const key = n.title || "Update";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([title, count]) => (count > 1 ? `${count} × ${title}` : title))
+      .join("\n");
   }
 
   return (
@@ -110,12 +126,20 @@ export default function Sidebar({
             )}
             {sec.items.map((item) => {
               const active = pathname === item.href;
-              const badge = badgeCountFor(item);
+              const badgeItems = badgeItemsFor(item);
+              const badge = badgeItems.length;
+              const tooltip = badge > 0 ? badgeTooltip(badgeItems) : null;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  title={collapsed ? item.label : undefined}
+                  title={
+                    collapsed
+                      ? tooltip
+                        ? `${item.label}\n${tooltip}`
+                        : item.label
+                      : tooltip || undefined
+                  }
                   className={`flex items-center gap-3 px-4 py-2 text-sm transition border-l-2 relative ${
                     active
                       ? "bg-white/10 text-white border-brand-light"
