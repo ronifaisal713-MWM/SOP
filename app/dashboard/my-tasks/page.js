@@ -62,6 +62,13 @@ export default function MyTasksPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () =>
         loadTasks({ silent: true })
       )
+      // New messages arrive as notification rows for this person --
+      // that's what the per-card chat badge counts.
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => loadTasks({ silent: true })
+      )
       .subscribe();
 
     return () => supabase.removeChannel(channel);

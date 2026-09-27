@@ -105,7 +105,7 @@ export default function TasksKanbanPage() {
   // stopping a timer anywhere should show up on everyone's board
   // without a manual refresh.
   useEffect(() => {
-    if (!checked || !allowed) return;
+    if (!checked || !allowed || !user) return;
 
     const channel = supabase
       .channel("board-live")
@@ -125,11 +125,21 @@ export default function TasksKanbanPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "task_checklist_items" }, () =>
         loadTasks({ silent: true })
       )
+      // A new message on any task arrives as a notification row for
+      // this person -- that's what the per-card chat badge counts, so
+      // without this the badge only appeared on a page reload.
+      // Filtered to their own rows: everyone else's notifications are
+      // irrelevant here and would cause needless refreshes.
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => loadTasks({ silent: true })
+      )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, allowed]);
+  }, [checked, allowed, user]);
 
   async function loadTasks({ silent = false } = {}) {
     if (!silent) setLoading(true);
