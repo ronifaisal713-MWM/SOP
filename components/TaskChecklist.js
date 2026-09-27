@@ -30,6 +30,20 @@ export default function TaskChecklist({ taskId, currentUser, isStaff }) {
 
   useEffect(() => {
     load();
+
+    // Two people commonly work a checklist at the same time -- without
+    // this, one ticking an item leaves the other's list stale and they
+    // can duplicate work.
+    const channel = supabase
+      .channel(`checklist-${taskId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "task_checklist_items", filter: `task_id=eq.${taskId}` },
+        () => load()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId]);
 

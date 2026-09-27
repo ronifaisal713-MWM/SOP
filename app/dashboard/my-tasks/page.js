@@ -52,8 +52,24 @@ export default function MyTasksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user]);
 
-  async function loadTasks() {
-    setLoading(true);
+  // The client is often watching this board while staff move work
+  // through the pipeline -- especially around "Needs Your Review".
+  useEffect(() => {
+    if (!checked || !user) return;
+
+    const channel = supabase
+      .channel("my-tasks-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () =>
+        loadTasks({ silent: true })
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checked, user]);
+
+  async function loadTasks({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     // RLS already scopes this to only the signed-in client's own tasks.
     const { data, error: fetchError } = await supabase
       .from("tasks")

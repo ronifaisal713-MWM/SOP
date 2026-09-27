@@ -75,7 +75,8 @@ Billing.
    `supabase/migration_043_broaden_status_notifications.sql`, then
    `supabase/migration_044_message_delete.sql`, then
    `supabase/migration_045_message_reply.sql`, then
-   `supabase/migration_046_realtime_tables.sql` (push also needs the
+   `supabase/migration_046_realtime_tables.sql`, then
+   `supabase/migration_047_realtime_collaborative.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:

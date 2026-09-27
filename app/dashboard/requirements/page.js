@@ -26,21 +26,25 @@ export default function RequirementsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  async function loadRequirements({ silent = false } = {}) {
+    if (!silent) setLoading(true);
+    const { data, error: fetchError } = await supabase
+      .from("requirements")
+      .select("*, clients(company_name)")
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      setError(fetchError.message);
+    } else {
+      setRequirements(data || []);
+    }
+    setLoading(false);
+  }
+
   useEffect(() => {
     if (!checked) return;
 
-    supabase
-      .from("requirements")
-      .select("*, clients(company_name)")
-      .order("created_at", { ascending: false })
-      .then(({ data, error: fetchError }) => {
-        if (fetchError) {
-          setError(fetchError.message);
-        } else {
-          setRequirements(data || []);
-        }
-        setLoading(false);
-      });
+    loadRequirements();
 
     // Visiting this list is exactly "seeing there's a new requirement" --
     // clear the sidebar/tab badge for it without waiting for the bell.
@@ -53,6 +57,18 @@ export default function RequirementsListPage() {
         .ilike("link", "/dashboard/requirements%")
         .then(() => {});
     }
+
+    // A client submitting a requirement is exactly the case where
+    // staff are sitting on this page waiting for work to arrive.
+    const channel = supabase
+      .channel("requirements-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "requirements" }, () =>
+        loadRequirements({ silent: true })
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user]);
 
   if (!checked) {

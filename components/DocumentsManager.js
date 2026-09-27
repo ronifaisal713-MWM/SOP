@@ -19,8 +19,22 @@ export default function DocumentsManager({ entityColumn, entityId, folder, canMa
   useEffect(() => {
     if (!entityId) return;
     load();
+
+    // A document uploaded by one person should appear for everyone
+    // else looking at the same requirement/report/invoice, rather than
+    // only after a reload.
+    const channel = supabase
+      .channel(`documents-${entityColumn}-${entityId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "files", filter: `${entityColumn}=eq.${entityId}` },
+        () => load()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId]);
+  }, [entityId, entityColumn]);
 
   async function load() {
     setLoading(true);

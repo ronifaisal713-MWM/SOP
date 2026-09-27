@@ -108,8 +108,21 @@ export default function TasksKanbanPage() {
     if (!checked || !allowed) return;
 
     const channel = supabase
-      .channel("board-running-timers")
+      .channel("board-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "time_entries" }, () =>
+        loadTasks({ silent: true })
+      )
+      // Cards moving, people being assigned, and checklist progress
+      // all change what this board shows -- previously only timers
+      // triggered a refresh, so a card someone else moved stayed put
+      // until reload.
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () =>
+        loadTasks({ silent: true })
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_assignees" }, () =>
+        loadTasks({ silent: true })
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_checklist_items" }, () =>
         loadTasks({ silent: true })
       )
       .subscribe();
