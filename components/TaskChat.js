@@ -258,7 +258,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
               key={m.id}
               className={`group flex items-end gap-1 ${isMine ? "justify-end" : "justify-start"}`}
             >
-              {!m.deleted_at && !isMine && (
+              {!m.deleted_at && isMine && (
                 <MessageActions
                   messageId={m.id}
                   currentUser={currentUser}
@@ -344,7 +344,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                   </>
                 )}
               </div>
-              {!m.deleted_at && isMine && (
+              {!m.deleted_at && !isMine && (
                 <MessageActions
                   messageId={m.id}
                   currentUser={currentUser}
