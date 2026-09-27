@@ -196,6 +196,7 @@ export default function ClientsListPage() {
             viewerRole={role}
             contacts={chatContacts}
             initialTab="public"
+            embedded
           />
         </ChatWidget>
       )}
