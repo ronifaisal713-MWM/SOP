@@ -81,7 +81,14 @@ export default function MessageReactions({ messageId, currentUser, align = "left
   });
   const entries = Object.entries(grouped);
 
-  if (entries.length === 0) return null;
+  // Deliberately NOT returning null when empty: this component owns
+  // the realtime subscription for its message, and unmounting on zero
+  // reactions killed that subscription -- so adding the very first
+  // reaction had nothing listening and it didn't appear until reload.
+  // An empty wrapper is cheap and keeps the channel alive.
+  if (entries.length === 0) {
+    return <div className="hidden" aria-hidden="true" />;
+  }
 
   return (
     <div className={`relative flex items-center gap-1 mt-1 ${align === "right" ? "justify-end" : ""}`}>

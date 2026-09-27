@@ -18,11 +18,7 @@ export default function MessageActions({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div
-      className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition ${
-        isMine ? "order-first" : ""
-      }`}
-    >
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
       <ReactionPicker
         messageId={messageId}
         currentUser={currentUser}
