@@ -72,7 +72,8 @@ Billing.
    `supabase/migration_040_document_notifications.sql`, then
    `supabase/migration_041_block_self_notifications.sql`, then
    `supabase/migration_042_fix_notification_blocker.sql`, then
-   `supabase/migration_043_broaden_status_notifications.sql` (push also needs the
+   `supabase/migration_043_broaden_status_notifications.sql`, then
+   `supabase/migration_044_message_delete.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { categoryForRole, ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
 import MessageReactions from "@/components/MessageReactions";
+import MessageAttachment from "@/components/MessageAttachment";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -162,6 +163,12 @@ export default function ClientChat({
           setMessages((prev) => [...prev, m]);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `client_id=eq.${clientId}` },
+        (payload) =>
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m)))
+      )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -238,15 +245,33 @@ export default function ClientChat({
     setMentionTarget(null);
   }
 
+  async function handleDeleteMessage(messageId) {
+    if (!confirm("Delete this message?")) return;
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, deleted_at: new Date().toISOString(), body: null, files: null, attachment_id: null }
+          : m
+      )
+    );
+
+    const { error: deleteError } = await supabase
+      .from("messages")
+      .update({ deleted_at: new Date().toISOString(), body: null, attachment_id: null })
+      .eq("id", messageId);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      loadMessages();
+    }
+  }
+
   async function handleAcknowledge(messageId) {
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, mention_acknowledged: true } : m))
     );
     await supabase.from("messages").update({ mention_acknowledged: true }).eq("id", messageId);
-  }
-
-  function fileUrl(storagePath) {
-    return supabase.storage.from("chat-attachments").getPublicUrl(storagePath).data.publicUrl;
   }
 
   return (
@@ -323,30 +348,44 @@ export default function ClientChat({
                     👑 Owner
                   </p>
                 )}
-                {m.body && <p className="whitespace-pre-wrap">{linkify(m.body)}</p>}
-                {m.files && (
-                  <a
-                    href={fileUrl(m.files.storage_path)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs underline block mt-1"
-                  >
-                    📎 {m.files.file_name}
-                  </a>
+                {m.deleted_at ? (
+                  <p className="text-xs italic opacity-70">This message was deleted</p>
+                ) : (
+                  <>
+                    {m.body && <p className="whitespace-pre-wrap">{linkify(m.body)}</p>}
+                    <MessageAttachment
+                      attachmentId={m.attachment_id}
+                      file={m.files}
+                      isMine={isMine}
+                    />
+                    {isPendingMentionForMe && (
+                      <button
+                        onClick={() => handleAcknowledge(m.id)}
+                        className="mt-2 text-xs bg-red-600 text-white rounded-md px-2 py-1 font-medium hover:bg-red-700 transition"
+                      >
+                        ✓ Acknowledge
+                      </button>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <MessageReactions
+                        messageId={m.id}
+                        currentUser={currentUser}
+                        align={isMine ? "right" : "left"}
+                      />
+                      {isMine && (
+                        <button
+                          onClick={() => handleDeleteMessage(m.id)}
+                          className={`text-[11px] mt-1 ${
+                            isMine ? "text-white/60 hover:text-white" : "text-slate-400 hover:text-red-500"
+                          }`}
+                          title="Delete message"
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
-                {isPendingMentionForMe && (
-                  <button
-                    onClick={() => handleAcknowledge(m.id)}
-                    className="mt-2 text-xs bg-red-600 text-white rounded-md px-2 py-1 font-medium hover:bg-red-700 transition"
-                  >
-                    ✓ Acknowledge
-                  </button>
-                )}
-                <MessageReactions
-                  messageId={m.id}
-                  currentUser={currentUser}
-                  align={isMine ? "right" : "left"}
-                />
               </div>
             </div>
           );

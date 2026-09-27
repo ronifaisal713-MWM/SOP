@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import MessageReactions from "@/components/MessageReactions";
+import MessageAttachment from "@/components/MessageAttachment";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -73,6 +74,12 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
           if (belongsHere) setMessages((prev) => [...prev, m]);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
+        (payload) =>
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m)))
+      )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -82,6 +89,28 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  async function handleDeleteMessage(messageId) {
+    if (!confirm("Delete this message?")) return;
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, deleted_at: new Date().toISOString(), body: null, files: null, attachment_id: null }
+          : m
+      )
+    );
+
+    const { error: deleteError } = await supabase
+      .from("messages")
+      .update({ deleted_at: new Date().toISOString(), body: null, attachment_id: null })
+      .eq("id", messageId);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      loadMessages();
+    }
+  }
 
   async function handleSend(e) {
     e.preventDefault();
@@ -132,10 +161,6 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
     setShowEmoji(false);
   }
 
-  function fileUrl(storagePath) {
-    return supabase.storage.from("chat-attachments").getPublicUrl(storagePath).data.publicUrl;
-  }
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
@@ -153,22 +178,34 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
                   isMine ? "bg-purple-600 text-white" : "bg-purple-50 border border-purple-200 text-purple-900"
                 }`}
               >
-                {m.body && <p className="whitespace-pre-wrap">{linkify(m.body)}</p>}
-                {m.files && (
-                  <a
-                    href={fileUrl(m.files.storage_path)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs underline block mt-1"
-                  >
-                    📎 {m.files.file_name}
-                  </a>
+                {m.deleted_at ? (
+                  <p className="text-xs italic opacity-70">This message was deleted</p>
+                ) : (
+                  <>
+                    {m.body && <p className="whitespace-pre-wrap">{linkify(m.body)}</p>}
+                    <MessageAttachment
+                      attachmentId={m.attachment_id}
+                      file={m.files}
+                      isMine={isMine}
+                    />
+                    <div className="flex items-center gap-2">
+                      <MessageReactions
+                        messageId={m.id}
+                        currentUser={currentUser}
+                        align={isMine ? "right" : "left"}
+                      />
+                      {isMine && (
+                        <button
+                          onClick={() => handleDeleteMessage(m.id)}
+                          className="text-[11px] mt-1 text-white/60 hover:text-white"
+                          title="Delete message"
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
-                <MessageReactions
-                  messageId={m.id}
-                  currentUser={currentUser}
-                  align={isMine ? "right" : "left"}
-                />
               </div>
             </div>
           );
