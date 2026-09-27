@@ -176,7 +176,7 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-slate-100 p-3">
+      <form onSubmit={handleSend} className="border-t border-slate-100 p-3 flex-shrink-0">
         {file && (
           <p className="text-xs text-slate-500 mb-2">
             📎 {file.name}{" "}

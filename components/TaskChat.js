@@ -292,7 +292,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-slate-100 p-3">
+      <form onSubmit={handleSend} className="border-t border-slate-100 p-3 flex-shrink-0">
         {isStaff && (
           <div className="flex gap-3 mb-2 text-xs">
             <label className="flex items-center gap-1">

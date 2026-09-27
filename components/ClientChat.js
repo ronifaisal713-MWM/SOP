@@ -257,7 +257,7 @@ export default function ClientChat({
           : "bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col h-[480px]"
       }
     >
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
         <div className="flex gap-1">
           {availableTabs.map((t) => (
             <button
@@ -354,7 +354,7 @@ export default function ClientChat({
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-slate-100 p-3">
+      <form onSubmit={handleSend} className="border-t border-slate-100 p-3 flex-shrink-0">
         {mentionTarget && (
           <p className="text-xs text-purple-600 mb-2">
             Mentioning <strong>{mentionTarget.full_name || "teammate"}</strong>{" "}
