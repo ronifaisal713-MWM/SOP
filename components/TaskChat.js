@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
 import MessageReactions from "@/components/MessageReactions";
-import MessageAttachment from "@/components/MessageAttachment";
+import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment";
+import MessageActions from "@/components/MessageActions";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -47,6 +48,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionTarget, setMentionTarget] = useState(null);
   const [senderRoleMap, setSenderRoleMap] = useState({});
+  const [replyTo, setReplyTo] = useState(null);
 
   const bottomRef = useRef(null);
 
@@ -193,6 +195,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
       visibility,
       attachment_id: attachmentId,
       mentioned_user_id: mentionTarget?.id || null,
+      reply_to_id: replyTo?.id || null,
     });
     setSending(false);
 
@@ -204,6 +207,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
     setFile(null);
     setShowEmoji(false);
     setMentionTarget(null);
+    setReplyTo(null);
   }
 
   async function handleDeleteMessage(messageId) {
@@ -250,7 +254,21 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
             m.mentioned_user_id === currentUser.id && !m.mention_acknowledged;
 
           return (
-            <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+            <div
+              key={m.id}
+              className={`group flex items-end gap-1 ${isMine ? "justify-end" : "justify-start"}`}
+            >
+              {!m.deleted_at && (
+                <MessageActions
+                  messageId={m.id}
+                  currentUser={currentUser}
+                  isMine={isMine}
+                  onReply={() => setReplyTo(m)}
+                  onDelete={() => handleDeleteMessage(m.id)}
+                  downloadUrl={attachmentUrl(m.files?.storage_path)}
+                  downloadName={m.files?.file_name}
+                />
+              )}
               <div
                 className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
                   isPendingMentionForMe
@@ -286,6 +304,20 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                     👑 Owner
                   </p>
                 )}
+                {m.reply_to_id && !m.deleted_at && (
+                  <div
+                    className={`text-[11px] border-l-2 pl-2 mb-1 opacity-80 ${
+                      isMine ? "border-white/40" : "border-slate-300"
+                    }`}
+                  >
+                    {(() => {
+                      const orig = messages.find((x) => x.id === m.reply_to_id);
+                      if (!orig) return <span className="italic">Original message unavailable</span>;
+                      if (orig.deleted_at) return <span className="italic">Deleted message</span>;
+                      return (orig.body || "Attachment").slice(0, 80);
+                    })()}
+                  </div>
+                )}
                 {m.deleted_at ? (
                   <p className="text-xs italic opacity-70">This message was deleted</p>
                 ) : (
@@ -304,24 +336,11 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                         ✓ Acknowledge
                       </button>
                     )}
-                    <div className="flex items-center gap-2">
-                      <MessageReactions
-                        messageId={m.id}
-                        currentUser={currentUser}
-                        align={isMine ? "right" : "left"}
-                      />
-                      {isMine && (
-                        <button
-                          onClick={() => handleDeleteMessage(m.id)}
-                          className={`text-[11px] mt-1 ${
-                            isMine ? "text-white/60 hover:text-white" : "text-slate-400 hover:text-red-500"
-                          }`}
-                          title="Delete message"
-                        >
-                          🗑
-                        </button>
-                      )}
-                    </div>
+                    <MessageReactions
+                      messageId={m.id}
+                      currentUser={currentUser}
+                      align={isMine ? "right" : "left"}
+                    />
                   </>
                 )}
               </div>
@@ -332,6 +351,23 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
       </div>
 
       <form onSubmit={handleSend} className="border-t border-slate-100 p-3 flex-shrink-0">
+        {replyTo && (
+          <div className="flex items-start justify-between gap-2 mb-2 bg-slate-50 border-l-2 border-brand rounded-r px-2 py-1">
+            <div className="min-w-0">
+              <p className="text-[10px] text-slate-400">Replying to</p>
+              <p className="text-xs text-slate-600 truncate">
+                {replyTo.body || "Attachment"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyTo(null)}
+              className="text-slate-400 hover:text-red-500 text-sm flex-shrink-0"
+            >
+              ×
+            </button>
+          </div>
+        )}
         {isStaff && (
           <div className="flex gap-3 mb-2 text-xs">
             <label className="flex items-center gap-1">

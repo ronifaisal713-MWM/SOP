@@ -59,6 +59,15 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
             loading="lazy"
           />
         </button>
+        <a
+          href={url}
+          download={file.file_name || true}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`text-[11px] underline block mt-0.5 ${isMine ? "text-white/80" : "text-slate-400"}`}
+        >
+          ⬇ Download
+        </a>
 
         {lightboxOpen && (
           <div
@@ -80,12 +89,13 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
             </button>
             <a
               href={url}
+              download={file.file_name || true}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="absolute bottom-4 text-white/80 text-xs underline"
             >
-              Open original
+              ⬇ Download
             </a>
           </div>
         )}
@@ -94,13 +104,30 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
   }
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`text-xs underline block mt-1 ${isMine ? "" : "text-brand"}`}
-    >
-      📎 {file.file_name}
-    </a>
+    <div className="mt-1">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`text-xs underline block ${isMine ? "" : "text-brand"}`}
+      >
+        📎 {file.file_name}
+      </a>
+      <a
+        href={url}
+        download={file.file_name || true}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`text-[11px] underline ${isMine ? "text-white/80" : "text-slate-400"}`}
+      >
+        ⬇ Download
+      </a>
+    </div>
   );
+}
+
+// Shared so chats can offer Download in the hover menu without
+// duplicating the storage-url logic.
+export function attachmentUrl(storagePath) {
+  return storagePath ? fileUrl(storagePath) : null;
 }
