@@ -6,6 +6,7 @@ import { ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCategory";
 import MessageReactions from "@/components/MessageReactions";
 import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment";
 import MessageActions from "@/components/MessageActions";
+import VoiceRecorder from "@/components/VoiceRecorder";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -475,6 +476,13 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
               }}
             />
           </label>
+          <VoiceRecorder
+            disabled={sending || !!file}
+            onRecorded={(voiceFile) => {
+              setError("");
+              setFile(voiceFile);
+            }}
+          />
           <button
             type="button"
             onClick={() => setShowMentionPicker((s) => !s)}

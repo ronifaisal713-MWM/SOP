@@ -6,6 +6,7 @@ import { categoryForRole, ALL_STAFF_ROLES, AGENCY_ROLES } from "@/lib/roleCatego
 import MessageReactions from "@/components/MessageReactions";
 import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment";
 import MessageActions from "@/components/MessageActions";
+import VoiceRecorder from "@/components/VoiceRecorder";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -514,6 +515,13 @@ export default function ClientChat({
               }}
             />
           </label>
+          <VoiceRecorder
+            disabled={sending || !!file}
+            onRecorded={(voiceFile) => {
+              setError("");
+              setFile(voiceFile);
+            }}
+          />
           {(isAgency || isStaffOnly || isClient) && (
             <button
               type="button"

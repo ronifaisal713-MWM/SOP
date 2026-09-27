@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import MessageReactions from "@/components/MessageReactions";
 import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment";
 import MessageActions from "@/components/MessageActions";
+import VoiceRecorder from "@/components/VoiceRecorder";
 
 const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
@@ -307,6 +308,13 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
               }}
             />
           </label>
+          <VoiceRecorder
+            disabled={sending || !!file}
+            onRecorded={(voiceFile) => {
+              setError("");
+              setFile(voiceFile);
+            }}
+          />
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}

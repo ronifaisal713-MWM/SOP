@@ -4,10 +4,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "avif"];
+const AUDIO_EXTENSIONS = ["webm", "m4a", "ogg", "mp3", "wav", "aac"];
+
+function extensionOf(fileName) {
+  return (fileName || "").split(".").pop()?.toLowerCase();
+}
 
 function isImage(fileName) {
-  const ext = (fileName || "").split(".").pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.includes(ext);
+  return IMAGE_EXTENSIONS.includes(extensionOf(fileName));
+}
+
+function isAudio(fileName) {
+  return AUDIO_EXTENSIONS.includes(extensionOf(fileName));
 }
 
 function fileUrl(storagePath) {
@@ -44,6 +52,23 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
   if (!file?.storage_path) return null;
 
   const url = fileUrl(file.storage_path);
+
+  if (isAudio(file.file_name)) {
+    return (
+      <div className="mt-1">
+        <audio controls preload="metadata" src={url} className="max-w-full h-9" />
+        <a
+          href={url}
+          download={file.file_name || true}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`text-[11px] underline block ${isMine ? "text-white/80" : "text-slate-400"}`}
+        >
+          ⬇ Download
+        </a>
+      </div>
+    );
+  }
 
   if (isImage(file.file_name)) {
     return (
