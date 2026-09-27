@@ -11,6 +11,7 @@ import StaffChat from "@/components/StaffChat";
 import Sidebar from "@/components/Sidebar";
 import { playNotificationSound, showBrowserNotification } from "@/lib/notificationAlerts";
 import { registerServiceWorker, subscribeToPush, isPushSubscribed } from "@/lib/pushNotifications";
+import { timeAgo } from "@/lib/timeAgo";
 
 // Desktop sidebar navigation, grouped into sections with icons.
 const SIDEBAR_BY_CATEGORY = {
@@ -468,13 +469,27 @@ function DashboardLayoutInner({ children }) {
     window.location.href = "/login";
   }
 
-  async function handleOpenNotifications() {
+  // Opening the bell no longer marks everything read. Doing so wiped
+  // the unread markers before they could be read -- which is the
+  // opposite of what a notification list is for. Reading now happens
+  // per-item (clicking one) or explicitly via "Mark all read".
+  function handleOpenNotifications() {
     setShowNotifications((s) => !s);
+  }
+
+  async function handleMarkOneRead(notificationId) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+    );
+    await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+  }
+
+  async function handleMarkAllRead() {
     const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadIds.length > 0) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
-    }
+    if (unreadIds.length === 0) return;
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
   }
 
   // The sidebar/nav should reflect which SECTION of the app is being
@@ -536,21 +551,63 @@ function DashboardLayoutInner({ children }) {
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 top-8 w-72 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-20">
+                <>
+                  {/* Click-away: without this the dropdown only closed
+                      by pressing the bell again. */}
+                  <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 top-8 w-80 bg-white border border-slate-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-20">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 sticky top-0 bg-white">
+                    <p className="text-xs font-semibold text-slate-700">
+                      Notifications
+                      {unreadCount > 0 && <span className="text-slate-400"> ({unreadCount} new)</span>}
+                    </p>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[11px] text-brand hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
                   {notifications.length === 0 && (
                     <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
                   )}
+
                   {notifications.slice(0, 20).map((n) => (
                     <Link
                       key={n.id}
                       href={n.link || "#"}
-                      className="block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
+                      onClick={() => handleMarkOneRead(n.id)}
+                      className={`block px-3 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition ${
+                        n.is_read ? "" : "bg-brand/5"
+                      }`}
                     >
-                      <p className="text-xs font-medium text-slate-700">{n.title}</p>
-                      {n.body && <p className="text-xs text-slate-500">{n.body}</p>}
+                      <div className="flex items-start gap-2">
+                        {/* Unread marker -- a list where everything looks
+                            identical gives no sense of what's actually new. */}
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
+                            n.is_read ? "bg-transparent" : "bg-brand"
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-xs ${
+                              n.is_read ? "text-slate-600" : "font-medium text-slate-800"
+                            }`}
+                          >
+                            {n.title}
+                          </p>
+                          {n.body && <p className="text-xs text-slate-500 truncate">{n.body}</p>}
+                          <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(n.created_at)}</p>
+                        </div>
+                      </div>
                     </Link>
                   ))}
-                </div>
+                  </div>
+                </>
               )}
 
               {isPlatformOwner && effectiveCategory === "agency" && (
