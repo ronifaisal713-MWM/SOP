@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { QUICK_REACTIONS } from "@/lib/emojiData";
+import EmojiPicker from "@/components/EmojiPicker";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😀", "🎉", "👀", "🙏"];
+
 
 // Messenger-style reactions for every chat surface. Clicking an emoji
 // you already used removes it; clicking the pill shows who reacted.
@@ -142,6 +144,7 @@ export default function MessageReactions({ messageId, currentUser, align = "left
 // it in the hover toolbar beside the message rather than underneath.
 export function ReactionPicker({ messageId, currentUser, align = "left" }) {
   const [open, setOpen] = useState(false);
+  const [showFull, setShowFull] = useState(false);
 
   async function react(emoji) {
     setOpen(false);
@@ -180,7 +183,7 @@ export function ReactionPicker({ messageId, currentUser, align = "left" }) {
               align === "right" ? "right-0" : "left-0"
             }`}
           >
-            {QUICK_EMOJIS.map((em) => (
+            {QUICK_REACTIONS.map((em) => (
               <button
                 key={em}
                 onClick={() => react(em)}
@@ -189,8 +192,33 @@ export function ReactionPicker({ messageId, currentUser, align = "left" }) {
                 {em}
               </button>
             ))}
+            {/* Anything beyond the six most-used ones lives in the full
+                categorised picker rather than making this bar huge. */}
+            <button
+              onClick={() => {
+                setOpen(false);
+                setShowFull(true);
+              }}
+              className="text-sm text-slate-400 hover:text-slate-600 px-1 border-l border-slate-200 ml-0.5"
+              title="More emojis"
+            >
+              +
+            </button>
           </div>
         </>
+      )}
+
+      {showFull && (
+        <div className="absolute bottom-6 z-20">
+          <EmojiPicker
+            onPick={(em) => {
+              react(em);
+              setShowFull(false);
+            }}
+            onClose={() => setShowFull(false)}
+            align={align}
+          />
+        </div>
       )}
     </div>
   );

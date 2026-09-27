@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import MessageReactions from "@/components/MessageReactions";
 import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment";
+import EmojiPicker from "@/components/EmojiPicker";
 import MessageActions from "@/components/MessageActions";
 import VoiceRecorder from "@/components/VoiceRecorder";
 
-const EMOJIS = ["👍", "🙏", "🎉", "✅", "❤️", "😀", "😅", "👀", "🔥", "🚀", "⚠️", "❓"];
 const MAX_FILE_SIZE_MB = 100;
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
@@ -273,17 +273,12 @@ export default function StaffChat({ currentUser, otherUserId, organizationId }) 
         )}
 
         {showEmoji && (
-          <div className="flex flex-wrap gap-1 mb-2 border border-slate-200 rounded-md p-2 bg-slate-50">
-            {EMOJIS.map((em) => (
-              <button
-                key={em}
-                type="button"
-                onClick={() => setBody((b) => b + em)}
-                className="text-lg hover:scale-110 transition"
-              >
-                {em}
-              </button>
-            ))}
+          <div className="relative mb-2">
+            <EmojiPicker
+              onPick={(em) => setBody((b) => b + em)}
+              onClose={() => setShowEmoji(false)}
+              align="left"
+            />
           </div>
         )}
 
