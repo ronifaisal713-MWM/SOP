@@ -39,6 +39,7 @@ const SIDEBAR_BY_CATEGORY = {
       items: [
         { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
         { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
+        { href: "/dashboard/leave/manage", label: "Leave", icon: "🌴" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
         { href: "/dashboard/billing", label: "Billing", icon: "💵" },
         { href: "/dashboard/admin/email-requests", label: "Email Requests", icon: "✉️" },
@@ -60,6 +61,7 @@ const SIDEBAR_BY_CATEGORY = {
       items: [
         { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
         { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
+        { href: "/dashboard/leave", label: "My Leave", icon: "🌴" },
         { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
         { href: "/dashboard/billing", label: "Billing", icon: "💵" },
       ],
@@ -89,6 +91,7 @@ const NAV_BY_CATEGORY = {
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/admin/clients", label: "Clients" },
     { href: "/dashboard/admin/team", label: "Team" },
+    { href: "/dashboard/leave", label: "My Leave" },
     { href: "/dashboard/tasks", label: "Task Board" },
     { href: "/dashboard/requirements", label: "Requirements" },
     { href: "/dashboard/reports", label: "Reports" },
@@ -148,6 +151,8 @@ const MOBILE_MORE_BY_CATEGORY = {
   platform: [],
   agency: [
     { href: "/dashboard/admin/team", label: "Team" },
+    { href: "/dashboard/leave/manage", label: "Leave" },
+    { href: "/dashboard/leave/manage", label: "Leave" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
     { href: "/dashboard/billing", label: "Billing" },
@@ -155,6 +160,7 @@ const MOBILE_MORE_BY_CATEGORY = {
   ],
   staff: [
     { href: "/dashboard/admin/team", label: "Team" },
+    { href: "/dashboard/leave", label: "My Leave" },
     { href: "/dashboard/reports", label: "Reports" },
     { href: "/dashboard/monthly-reports", label: "Monthly Reports" },
     { href: "/dashboard/billing", label: "Billing" },
