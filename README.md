@@ -80,7 +80,8 @@ Billing.
    `supabase/migration_048_internal_requirements.sql`, then
    `supabase/migration_049_leave_management.sql`, then
    `supabase/migration_050_partial_day_leave.sql`, then
-   `supabase/migration_051_email_routing.sql` (push also needs the
+   `supabase/migration_051_email_routing.sql`, then
+   `supabase/migration_052_email_cron.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:
@@ -157,3 +158,25 @@ if you have Node locally, or with any online VAPID generator.
 Note on iOS: Safari only delivers Web Push to sites the person has
 added to their home screen (iOS 16.4+). Android and desktop browsers
 have no such restriction.
+
+## Email notifications (Gmail)
+
+Emails queue in `email_outbox` regardless of setup, and are sent once
+these are in place:
+
+1. **Turn on 2-Step Verification** on the sending Google account.
+2. **Create an App Password** — myaccount.google.com → Security →
+   2-Step Verification → App passwords → generate one for "Mail".
+   A normal account password will not work; Google blocks it.
+3. **Add to Vercel** (then redeploy):
+   ```
+   GMAIL_USER          = your.address@gmail.com
+   GMAIL_APP_PASSWORD  = the 16-character App Password   (Secret)
+   EMAIL_FROM          = Agency OS                        (optional)
+   ```
+4. Run `supabase/migration_052_email_cron.sql`, which drains the
+   outbox every 5 minutes.
+
+Who receives what is configured in-app under Leave → Settings →
+Email Notifications, not in code. Gmail allows roughly 500 messages a
+day, well above what this generates.
