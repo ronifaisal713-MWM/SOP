@@ -128,7 +128,7 @@ export default function RequirementsListPage() {
                       {r.status}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{r.clients?.company_name || "-"}</p>
+                  <p className="text-xs text-slate-500 mt-1">{r.clients?.company_name || "🏢 Internal"}</p>
                   <div className="flex items-center gap-3 text-xs text-slate-400 mt-2">
                     <span>{r.category || "-"}</span>
                     <span>
@@ -166,7 +166,7 @@ export default function RequirementsListPage() {
                         {r.title}
                         {r.deleted_at && <span className="ml-2 text-xs text-red-500 font-normal">(Deleted)</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "-"}</td>
+                      <td className="px-4 py-3 text-slate-500">{r.clients?.company_name || "🏢 Internal"}</td>
                       <td className="px-4 py-3 text-slate-500">{r.category || "-"}</td>
                       <td className="px-4 py-3">
                         {PRIORITY_ICON[r.priority] || ""} {r.priority}

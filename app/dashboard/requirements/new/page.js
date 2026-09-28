@@ -29,7 +29,12 @@ export default function NewRequirementPage() {
   const { user, checked } = useRequireAuth();
   const router = useRouter();
 
-  const [roleInfo, setRoleInfo] = useState({ loading: true, role: null, clientId: null });
+  const [roleInfo, setRoleInfo] = useState({
+    loading: true,
+    role: null,
+    clientId: null,
+    organizationId: null,
+  });
   const [clients, setClients] = useState([]);
 
   const [form, setForm] = useState({
@@ -53,7 +58,7 @@ export default function NewRequirementPage() {
     async function loadRoleInfo() {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, organization_id")
         .eq("id", user.id)
         .single();
 
@@ -65,7 +70,12 @@ export default function NewRequirementPage() {
           .select("id, company_name")
           .order("company_name");
         setClients(clientList || []);
-        setRoleInfo({ loading: false, role, clientId: null });
+        setRoleInfo({
+          loading: false,
+          role,
+          clientId: null,
+          organizationId: profile?.organization_id || null,
+        });
       } else {
         const { data: clientUser } = await supabase
           .from("client_users")
@@ -88,10 +98,19 @@ export default function NewRequirementPage() {
     setError("");
 
     const isStaff = roleInfo.role && STAFF_ROLES.includes(roleInfo.role);
-    const clientId = isStaff ? form.clientId : roleInfo.clientId;
+    // "internal" is a sentinel from the dropdown -- an agency task with
+    // no client attached. A client user never sees that option and
+    // always gets their own client id.
+    const isInternal = isStaff && form.clientId === "internal";
+    const clientId = isInternal ? null : isStaff ? form.clientId : roleInfo.clientId;
 
-    if (isStaff && !clientId) {
-      setError("Please select which Client this requirement is for.");
+    if (isStaff && !form.clientId) {
+      setError("Please choose a Client, or select Internal.");
+      return;
+    }
+
+    if (isInternal && !roleInfo.organizationId) {
+      setError("Couldn't determine your agency. Try reloading the page.");
       return;
     }
 
@@ -108,6 +127,9 @@ export default function NewRequirementPage() {
         description: form.description || null,
         created_by: user?.id,
         client_id: clientId,
+        // Client work derives its org via the client; internal work
+        // has to carry it directly or nothing can scope it.
+        organization_id: isInternal ? roleInfo.organizationId : null,
         status: "new",
       })
       .select()
@@ -170,12 +192,18 @@ export default function NewRequirementPage() {
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
               >
                 <option value="">-- Select a Client --</option>
+                <option value="internal">🏢 Internal (no client)</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.company_name}
                   </option>
                 ))}
               </select>
+              {form.clientId === "internal" && (
+                <p className="text-xs text-slate-400 mt-1">
+                  Internal work stays within your agency -- no client will see this.
+                </p>
+              )}
               {clients.length === 0 && (
                 <p className="text-xs text-slate-400 mt-1">
                   No clients yet — create one first from Dashboard → Clients.
