@@ -83,7 +83,12 @@ export default function MyLeavePage() {
   function balanceFor(typeId) {
     const t = types.find((x) => x.id === typeId);
     const b = balances.find((x) => x.leave_type_id === typeId);
-    const entitled = Number(b?.entitled ?? t?.default_days ?? 0) + Number(b?.carried_forward || 0);
+    const defaultDays = Number(t?.default_days || 0);
+    const stored = Number(b?.entitled || 0);
+    // A balance row can exist with entitled still at 0 if it was
+    // created before the entitlement was set -- fall back to the
+    // type's allowance rather than reporting a negative balance.
+    const entitled = (stored > 0 ? stored : defaultDays) + Number(b?.carried_forward || 0);
     const used = Number(b?.used || 0);
     return { entitled, used, remaining: entitled - used };
   }
