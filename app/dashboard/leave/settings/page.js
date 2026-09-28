@@ -7,6 +7,44 @@ import { AGENCY_ROLES } from "@/lib/roleCategory";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+// Only events worth interrupting an inbox over. Chat, mentions and
+// status moves stay in-app and push -- emailing those would bury the
+// ones that actually need a decision.
+const EMAIL_EVENTS = [
+  {
+    key: "leave_request",
+    label: "Someone requests leave",
+    hint: "Goes to whoever can approve it.",
+    fixedRecipient: false,
+  },
+  {
+    key: "leave_reviewed",
+    label: "Leave approved or rejected",
+    hint: "Always goes to the person who asked — this just turns it on or off.",
+    fixedRecipient: true,
+  },
+  {
+    key: "new_requirement",
+    label: "New requirement submitted",
+    hint: "A client (or teammate) files new work.",
+    fixedRecipient: false,
+  },
+  {
+    key: "client_decision",
+    label: "Client approves or requests revision",
+    hint: "The client has acted on work you sent them.",
+    fixedRecipient: false,
+  },
+];
+
+const RECIPIENT_MODES = [
+  { value: "off", label: "No email" },
+  { value: "owner", label: "Owner only" },
+  { value: "admins", label: "Owner + Admins" },
+  { value: "approvers", label: "Owner, Admins, PMs, Team Leads" },
+  { value: "specific", label: "Specific people..." },
+];
+
 export default function LeaveSettingsPage() {
   const { checked, allowed, user } = useRequireRole(AGENCY_ROLES);
 
@@ -22,6 +60,7 @@ export default function LeaveSettingsPage() {
 
   const [newType, setNewType] = useState({ name: "", days: "", isPaid: true, color: "#1F4E79" });
   const [newHoliday, setNewHoliday] = useState({ date: "", name: "" });
+  const [emailRules, setEmailRules] = useState([]);
 
   const year = new Date().getFullYear();
 
@@ -57,6 +96,12 @@ export default function LeaveSettingsPage() {
 
     const { data: balanceRows } = await supabase.from("leave_balances").select("*").eq("year", year);
     setBalances(balanceRows || []);
+
+    const { data: ruleRows } = await supabase
+      .from("email_notification_rules")
+      .select("*")
+      .eq("organization_id", org);
+    setEmailRules(ruleRows || []);
 
     setLoading(false);
   }
@@ -143,6 +188,24 @@ export default function LeaveSettingsPage() {
     if (e) setError(e.message);
     else {
       flash("Entitlement saved");
+      load();
+    }
+  }
+
+  async function setEmailRule(eventKey, mode, ids = []) {
+    const { error: e } = await supabase.from("email_notification_rules").upsert(
+      {
+        organization_id: orgId,
+        event_key: eventKey,
+        recipient_mode: mode,
+        recipient_ids: ids,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "organization_id,event_key" }
+    );
+    if (e) setError(e.message);
+    else {
+      flash("Email setting saved");
       load();
     }
   }
@@ -305,6 +368,77 @@ export default function LeaveSettingsPage() {
               Add
             </button>
           </form>
+        </div>
+
+        {/* Email notifications */}
+        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-700 mb-1">Email Notifications</h2>
+          <p className="text-xs text-slate-400 mb-4">
+            Choose who gets an email for each event. Everything else stays in-app only.
+          </p>
+
+          <div className="space-y-4">
+            {EMAIL_EVENTS.map((ev) => {
+              const rule = emailRules.find((r) => r.event_key === ev.key);
+              const mode = rule?.recipient_mode || "off";
+              const ids = rule?.recipient_ids || [];
+
+              return (
+                <div key={ev.key} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                  <p className="text-sm text-slate-700">{ev.label}</p>
+                  <p className="text-xs text-slate-400 mb-2">{ev.hint}</p>
+
+                  {ev.fixedRecipient ? (
+                    <label className="flex items-center gap-2 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={mode !== "off"}
+                        onChange={(e) => setEmailRule(ev.key, e.target.checked ? "owner" : "off")}
+                      />
+                      Send this email
+                    </label>
+                  ) : (
+                    <>
+                      <select
+                        value={mode}
+                        onChange={(e) => setEmailRule(ev.key, e.target.value, ids)}
+                        className="border border-slate-300 rounded-md px-3 py-1.5 text-sm"
+                      >
+                        {RECIPIENT_MODES.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      {mode === "specific" && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {staff.map((s) => (
+                            <label
+                              key={s.id}
+                              className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={ids.includes(s.id)}
+                                onChange={(e) => {
+                                  const next = e.target.checked
+                                    ? [...ids, s.id]
+                                    : ids.filter((x) => x !== s.id);
+                                  setEmailRule(ev.key, "specific", next);
+                                }}
+                              />
+                              {s.full_name || "Unnamed"}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Entitlements */}
