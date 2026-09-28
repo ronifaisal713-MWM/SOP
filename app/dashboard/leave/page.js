@@ -28,8 +28,8 @@ export default function MyLeavePage() {
     leaveTypeId: "",
     startDate: "",
     endDate: "",
-    isHalfDay: false,
-    halfDayPeriod: "first",
+    startHalf: false,
+    endHalf: false,
     reason: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -107,9 +107,9 @@ export default function MyLeavePage() {
       user_id: user.id,
       leave_type_id: form.leaveTypeId,
       start_date: form.startDate,
-      end_date: form.isHalfDay ? form.startDate : form.endDate,
-      is_half_day: form.isHalfDay,
-      half_day_period: form.isHalfDay ? form.halfDayPeriod : null,
+      end_date: form.endDate || form.startDate,
+      start_half: form.startHalf,
+      end_half: form.endHalf,
       days: 0,
       reason: form.reason || null,
     });
@@ -126,8 +126,8 @@ export default function MyLeavePage() {
       leaveTypeId: "",
       startDate: "",
       endDate: "",
-      isHalfDay: false,
-      halfDayPeriod: "first",
+      startHalf: false,
+      endHalf: false,
       reason: "",
     });
     load();
@@ -141,6 +141,26 @@ export default function MyLeavePage() {
       .eq("id", requestId);
     if (cancelError) setError(cancelError.message);
     load();
+  }
+
+  // Rough preview only -- the authoritative count comes from the
+  // database, which knows the weekend config and holiday list.
+  let estimatedDays = null;
+  if (form.startDate && form.endDate) {
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+    if (end >= start) {
+      const weekendSet = new Set([5, 6]);
+      const holidaySet = new Set(holidays.map((h) => h.holiday_date));
+      let count = 0;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = d.toISOString().slice(0, 10);
+        if (!weekendSet.has(d.getDay()) && !holidaySet.has(iso)) count += 1;
+      }
+      if (form.startHalf) count -= 0.5;
+      if (form.endHalf && form.endDate !== form.startDate) count -= 0.5;
+      estimatedDays = count > 0 ? count : null;
+    }
   }
 
   if (!checked || loading) {
@@ -219,10 +239,14 @@ export default function MyLeavePage() {
                   <div>
                     <p className="font-medium text-slate-800 text-sm">
                       {type?.name || "Leave"}
-                      {r.is_half_day && (
+                      {(r.start_half || r.end_half) && (
                         <span className="text-xs text-slate-400 font-normal">
                           {" "}
-                          (half day, {r.half_day_period})
+                          {r.start_half && r.end_half
+                            ? "(half days at both ends)"
+                            : r.start_half
+                            ? "(starts midday)"
+                            : "(ends midday)"}
                         </span>
                       )}
                     </p>
@@ -284,54 +308,66 @@ export default function MyLeavePage() {
                 </select>
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={form.isHalfDay}
-                  onChange={(e) => setForm((f) => ({ ...f, isHalfDay: e.target.checked }))}
-                />
-                Half day
-              </label>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
-                    {form.isHalfDay ? "Date *" : "From *"}
-                  </label>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">From *</label>
                   <input
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        startDate: e.target.value,
+                        // Keep a single-date request coherent -- the end
+                        // can't sit before the start.
+                        endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate,
+                      }))
+                    }
                     className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                   />
-                </div>
-                {form.isHalfDay ? (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-600 mb-1">Period</label>
-                    <select
-                      value={form.halfDayPeriod}
-                      onChange={(e) => setForm((f) => ({ ...f, halfDayPeriod: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="first">First half</option>
-                      <option value="second">Second half</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-600 mb-1">To *</label>
+                  <label className="flex items-center gap-2 text-xs text-slate-500 mt-1.5">
                     <input
-                      type="date"
-                      required
-                      value={form.endDate}
-                      min={form.startDate}
-                      onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                      type="checkbox"
+                      checked={form.startHalf}
+                      onChange={(e) => setForm((f) => ({ ...f, startHalf: e.target.checked }))}
                     />
-                  </div>
-                )}
+                    Half day (from afternoon)
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">To *</label>
+                  <input
+                    type="date"
+                    required
+                    value={form.endDate}
+                    min={form.startDate}
+                    onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
+                  />
+                  {/* On a single date the two halves mean the same day,
+                      so only one checkbox is offered. */}
+                  {form.endDate && form.endDate !== form.startDate && (
+                    <label className="flex items-center gap-2 text-xs text-slate-500 mt-1.5">
+                      <input
+                        type="checkbox"
+                        checked={form.endHalf}
+                        onChange={(e) => setForm((f) => ({ ...f, endHalf: e.target.checked }))}
+                      />
+                      Half day (until midday)
+                    </label>
+                  )}
+                </div>
               </div>
+
+              {estimatedDays !== null && (
+                <p className="text-xs text-brand bg-brand/5 rounded-md px-3 py-2">
+                  Approximately <strong>{estimatedDays}</strong>{" "}
+                  {estimatedDays === 1 ? "day" : "days"} — the exact figure is confirmed on submit,
+                  after weekends and holidays are excluded.
+                </p>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1">Reason</label>

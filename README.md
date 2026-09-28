@@ -78,7 +78,8 @@ Billing.
    `supabase/migration_046_realtime_tables.sql`, then
    `supabase/migration_047_realtime_collaborative.sql`, then
    `supabase/migration_048_internal_requirements.sql`, then
-   `supabase/migration_049_leave_management.sql` (push also needs the
+   `supabase/migration_049_leave_management.sql`, then
+   `supabase/migration_050_partial_day_leave.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:

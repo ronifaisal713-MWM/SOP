@@ -196,7 +196,12 @@ export default function LeaveManagePage() {
                       {type?.name || "Leave"} · {r.start_date}
                       {r.end_date !== r.start_date && ` → ${r.end_date}`} · {r.days}{" "}
                       {Number(r.days) === 1 ? "day" : "days"}
-                      {r.is_half_day && ` (${r.half_day_period} half)`}
+                      {(r.start_half || r.end_half) &&
+                        (r.start_half && r.end_half
+                          ? " (half days at both ends)"
+                          : r.start_half
+                          ? " (starts midday)"
+                          : " (ends midday)")}
                     </p>
                     {r.reason && <p className="text-xs text-slate-600 mt-1">{r.reason}</p>}
                   </div>
