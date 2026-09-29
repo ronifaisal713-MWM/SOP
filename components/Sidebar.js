@@ -69,9 +69,13 @@ export default function Sidebar({
         : null;
     return notifications.filter((n) => {
       if (n.is_read || !n.link) return false;
-      const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
-      const matchesAlt = altHref && n.link.startsWith(altHref + "/");
-      return matchesHref || matchesAlt;
+      // Several notifications deep-link with parameters --
+      // "/dashboard/admin/team?openDm=..." opens that conversation.
+      // Compare the path only, or those never match: the query starts
+      // with "?" so neither an exact match nor a "/" prefix test hits.
+      const path = n.link.split(/[?#]/)[0];
+      const matches = (base) => path === base || path.startsWith(base + "/");
+      return matches(item.href) || (altHref && matches(altHref));
     });
   }
 

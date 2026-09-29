@@ -769,9 +769,11 @@ function DashboardLayoutInner({ children }) {
               item.label !== "Home"
                 ? notifications.filter((n) => {
                     if (n.is_read || !n.link) return false;
-                    const matchesHref = n.link === item.href || n.link.startsWith(item.href + "/");
-                    const matchesAlt = altHref && n.link.startsWith(altHref + "/");
-                    return matchesHref || matchesAlt;
+                    // Path only -- deep links carry query parameters
+                    // (?openDm=, ?openChat=) that break a prefix test.
+                    const path = n.link.split(/[?#]/)[0];
+                    const matches = (base) => path === base || path.startsWith(base + "/");
+                    return matches(item.href) || (altHref && matches(altHref));
                   }).length
                 : 0;
             return (
