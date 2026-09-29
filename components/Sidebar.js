@@ -208,7 +208,7 @@ export default function Sidebar({
             {collapsed ? <Icon name="profile" size={16} /> : "Profile"}
           </Link>
           <button onClick={onSignOut} className="text-slate-400 hover:text-white" title="Sign Out">
-            {collapsed ? "🚪" : "Sign Out"}
+            {collapsed ? <Icon name="logout" size={16} /> : "Sign Out"}
           </button>
         </div>
       </div>

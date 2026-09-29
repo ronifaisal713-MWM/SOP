@@ -142,7 +142,7 @@ function ClientWorkspacePageInner() {
       </div>
 
       <ChatWidget
-        title={`💬 ${client.company_name}`}
+        title={`${client.company_name}`}
         open={chatOpen}
         onToggle={() => setChatOpen((o) => !o)}
         onClose={() => setChatOpen(false)}

@@ -6,8 +6,8 @@ import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import DocumentsManager from "@/components/DocumentsManager";
 import TimeTracker from "@/components/TimeTracker";
 import TaskChecklist from "@/components/TaskChecklist";
+import PriorityDot from "@/components/PriorityDot";
 
-const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 const STATUS_OPTIONS = [
   "incoming",
   "processing",
@@ -152,7 +152,7 @@ export default function TaskDetailsPanel({ taskId, currentUser, isStaff, onTaskC
         </div>
 
         <p className="text-xs text-slate-400 mt-1">
-          {PRIORITY_ICON[task.priority] || ""} {task.priority}
+          <PriorityDot priority={task.priority} /> {task.priority}
           {task.deadline ? ` · due ${task.deadline}` : ""}
         </p>
 

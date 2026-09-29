@@ -7,6 +7,7 @@ import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import StaffChat from "@/components/StaffChat";
+import Icon from "@/components/Icon";
 
 const ROLE_LABEL = {
   super_admin: "Owner",
@@ -120,7 +121,7 @@ function TeamListInner() {
                     onClick={() => setDmUser(m)}
                     className="text-xs text-purple-600 hover:underline flex-shrink-0"
                   >
-                    💬 Message
+                    <Icon name="chat" size={13} /> Message
                   </button>
                 )}
               </div>
@@ -131,7 +132,7 @@ function TeamListInner() {
 
       {dmUser && organizationId && (
         <ChatWidget
-          title={`💬 ${dmUser.full_name || "Unnamed"}`}
+          title={`${dmUser.full_name || "Unnamed"}`}
           open={true}
           onToggle={() => setDmUser(null)}
           onClose={() => setDmUser(null)}

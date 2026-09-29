@@ -6,6 +6,7 @@ import { useRequireRole } from "@/lib/useRequireRole";
 import { AGENCY_ROLES, ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import ClientChat from "@/components/ClientChat";
+import Icon from "@/components/Icon";
 
 export default function ClientsListPage() {
   const { checked, allowed, role, user } = useRequireRole(ALL_STAFF_ROLES);
@@ -102,7 +103,7 @@ export default function ClientsListPage() {
                       onClick={() => openChat(c)}
                       className="text-purple-600 text-xs hover:underline"
                     >
-                      💬 Message
+                      <Icon name="chat" size={13} /> Message
                     </button>
                     <a href={`/dashboard/clients/${c.id}`} className="text-brand text-xs hover:underline">
                       Switch to Client →
@@ -150,7 +151,7 @@ export default function ClientsListPage() {
                           onClick={() => openChat(c)}
                           className="text-purple-600 text-xs hover:underline"
                         >
-                          💬 Message
+                          <Icon name="chat" size={13} /> Message
                         </button>
                       </td>
                       <td className="px-4 py-3">
@@ -182,7 +183,7 @@ export default function ClientsListPage() {
 
       {chatClient && user && (
         <ChatWidget
-          title={`💬 ${chatClient.company_name}`}
+          title={`${chatClient.company_name}`}
           open={true}
           onToggle={() => setChatClient(null)}
           onClose={() => setChatClient(null)}

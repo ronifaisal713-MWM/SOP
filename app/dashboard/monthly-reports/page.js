@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { categoryForRole } from "@/lib/roleCategory";
 import DocumentsManager from "@/components/DocumentsManager";
+import Icon from "@/components/Icon";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -284,7 +285,7 @@ export default function MonthlyReportsPage() {
                       onClick={() => setOpenMonth(idx)}
                       className="bg-white border border-slate-200 rounded-lg p-4 text-left shadow-sm hover:border-brand hover:shadow transition"
                     >
-                      <p className="text-2xl mb-1">📁</p>
+                      <p className="text-2xl mb-1"><Icon name="folder" size={16} /></p>
                       <p className="text-sm font-medium text-slate-800">{name}</p>
                       <p className="text-xs text-slate-400">
                         {count} report{count === 1 ? "" : "s"}
@@ -304,7 +305,7 @@ export default function MonthlyReportsPage() {
                     ← All months ({selectedYear})
                   </button>
                   <h2 className="text-sm font-semibold text-slate-600">
-                    📁 {MONTH_NAMES[openMonth]} {selectedYear}
+                    <Icon name="folder" size={16} /> {MONTH_NAMES[openMonth]} {selectedYear}
                   </h2>
                   {isStaffOrAgency && (
                     <button
@@ -355,7 +356,7 @@ export default function MonthlyReportsPage() {
 
                         {!r.storage_path && r.file_expired_at && !isDeleted && (
                           <p className="text-xs text-slate-400 mt-2">
-                            📎 File expired (14-month retention) — report details above are still kept.
+                            <Icon name="paperclip" size={12} className="inline mr-1" /> File expired (14-month retention) — report details above are still kept.
                           </p>
                         )}
 
@@ -458,7 +459,7 @@ export default function MonthlyReportsPage() {
                         key={`${f.name}-${f.size}-${i}`}
                         className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 rounded-md px-2 py-1.5"
                       >
-                        <span className="truncate min-w-0">📎 {f.name}</span>
+                        <span className="truncate min-w-0"><Icon name="paperclip" size={12} /> {f.name}</span>
                         <button
                           type="button"
                           onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}

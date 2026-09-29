@@ -8,6 +8,7 @@ import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment
 import EmojiPicker from "@/components/EmojiPicker";
 import MessageActions from "@/components/MessageActions";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import Icon from "@/components/Icon";
 
 const MAX_FILE_SIZE_MB = 100;
 
@@ -297,7 +298,18 @@ export default function ClientChat({
                 tab === t ? "bg-brand text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               }`}
             >
-              {t === "public" ? "🔵 Public" : t === "internal" ? "🟠 Internal" : "🟣 Personal"}
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full ${
+                    t === "public"
+                      ? "bg-blue-500"
+                      : t === "internal"
+                      ? "bg-orange-500"
+                      : "bg-purple-500"
+                  }`}
+                />
+                {t === "public" ? "Public" : t === "internal" ? "Internal" : "Personal"}
+              </span>
             </button>
           ))}
         </div>
@@ -364,7 +376,7 @@ export default function ClientChat({
                       isMine ? "text-white/90" : "text-purple-600"
                     }`}
                   >
-                    👑 Owner
+                    <Icon name="crown" size={11} /> Owner
                   </p>
                 )}
                 {m.reply_to_id && !m.deleted_at && (
@@ -451,7 +463,7 @@ export default function ClientChat({
 
         {file && (
           <p className="text-xs text-slate-500 mb-2">
-            📎 {file.name}{" "}
+            <Icon name="paperclip" size={12} /> {file.name}{" "}
             <button type="button" onClick={() => setFile(null)} className="text-red-500 ml-1">
               remove
             </button>
@@ -491,10 +503,10 @@ export default function ClientChat({
             className="text-lg px-0.5 sm:px-1 flex-shrink-0"
             title="Emoji"
           >
-            😀
+            <Icon name="smile" size={18} />
           </button>
           <label className="text-lg px-0.5 sm:px-1 cursor-pointer flex-shrink-0" title="Attach file">
-            📎
+            <Icon name="paperclip" size={18} />
             <input
               type="file"
               className="hidden"

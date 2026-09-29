@@ -1,5 +1,7 @@
 "use client";
 
+import Icon from "@/components/Icon";
+
 // A floating bottom-right chat bubble that expands into a small popup
 // panel, instead of navigating to a whole new page just to send a
 // message. `open` and `onToggle`/`onClose` are controlled by the parent
@@ -17,7 +19,10 @@ export default function ChatWidget({ title, open, onToggle, onClose, children })
       {open && (
         <div className="mb-3 w-[calc(100vw-2.5rem)] max-w-80 sm:max-w-96 h-[460px] max-h-[calc(100vh-9rem)] md:max-h-[calc(100vh-5rem)] bg-white border border-slate-200 rounded-lg shadow-2xl flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-brand text-white flex-shrink-0">
-            <span className="text-sm font-semibold truncate min-w-0">{title}</span>
+            <span className="text-sm font-semibold truncate min-w-0 flex items-center gap-1.5">
+              <Icon name="chat" size={14} className="flex-shrink-0" />
+              {title}
+            </span>
             <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none flex-shrink-0">
               ×
             </button>

@@ -7,6 +7,8 @@ import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import ChatWidget from "@/components/ChatWidget";
 import TaskChat from "@/components/TaskChat";
 import TaskDetailsPanel from "@/components/TaskDetailsPanel";
+import PriorityDot from "@/components/PriorityDot";
+import Icon from "@/components/Icon";
 
 const COLUMNS = [
   { key: "incoming", label: "Incoming" },
@@ -19,7 +21,6 @@ const COLUMNS = [
   { key: "done", label: "Done" },
 ];
 
-const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 
 function initials(name) {
   if (!name) return "?";
@@ -326,7 +327,7 @@ export default function TasksKanbanPage() {
                           : "Unassigned"}
                       </p>
                       <p className="text-slate-400 text-xs mb-2">
-                        {PRIORITY_ICON[t.priority] || ""} {t.priority}
+                        <PriorityDot priority={t.priority} /> {t.priority}
                         {t.deadline ? ` · due ${t.deadline}` : ""}
                         {checklistByTask[t.id] && (
                           <>
@@ -361,7 +362,7 @@ export default function TasksKanbanPage() {
                           }}
                           className="text-xs text-brand hover:underline flex items-center gap-1"
                         >
-                          💬 Chat
+                          <Icon name="chat" size={13} /> Chat
                           {unreadByTask[t.id] > 0 && (
                             <span className="bg-red-500 text-white text-[9px] rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-1 font-medium">
                               {unreadByTask[t.id] > 9 ? "9+" : unreadByTask[t.id]}
@@ -403,7 +404,7 @@ export default function TasksKanbanPage() {
 
       {openChatTask && (
         <ChatWidget
-          title={`💬 ${openChatTask.title}`}
+          title={`${openChatTask.title}`}
           open={true}
           onToggle={() => setOpenChatTask(null)}
           onClose={() => setOpenChatTask(null)}

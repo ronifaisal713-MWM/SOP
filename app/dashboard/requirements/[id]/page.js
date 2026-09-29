@@ -6,8 +6,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { ALL_STAFF_ROLES } from "@/lib/roleCategory";
 import DocumentsManager from "@/components/DocumentsManager";
+import PriorityDot from "@/components/PriorityDot";
 
-const PRIORITY_ICON = { urgent: "🔴", high: "🟠", normal: "🟡", low: "🟢" };
 const CATEGORIES = [
   "Social Media",
   "SEO",
@@ -264,7 +264,7 @@ export default function RequirementDetailPage() {
               <div>
                 <p className="text-slate-400">Priority</p>
                 <p className="text-slate-700">
-                  {PRIORITY_ICON[requirement.priority] || ""} {requirement.priority}
+                  <PriorityDot priority={requirement.priority} /> {requirement.priority}
                 </p>
               </div>
               <div>

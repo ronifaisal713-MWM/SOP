@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireRole } from "@/lib/useRequireRole";
+import Icon from "@/components/Icon";
 
 const APPROVER_ROLES = ["super_admin", "admin", "project_manager", "team_lead"];
 
@@ -119,7 +120,7 @@ export default function LeaveManagePage() {
               href="/dashboard/leave/settings"
               className="text-sm px-3 py-1.5 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
             >
-              ⚙ Settings
+              <Icon name="settings" size={14} /> Settings
             </a>
           </div>
         </div>

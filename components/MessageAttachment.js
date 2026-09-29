@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import Icon from "@/components/Icon";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "avif"];
 const AUDIO_EXTENSIONS = ["webm", "m4a", "ogg", "mp3", "wav", "aac"];
@@ -62,9 +63,9 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
           download={file.file_name || true}
           target="_blank"
           rel="noopener noreferrer"
-          className={`text-[11px] underline block ${isMine ? "text-white/80" : "text-slate-400"}`}
+          className={`text-[11px] underline inline-flex items-center gap-1 ${isMine ? "text-white/80" : "text-slate-400"}`}
         >
-          ⬇ Download
+          <Icon name="download" size={12} /> Download
         </a>
       </div>
     );
@@ -89,9 +90,9 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
           download={file.file_name || true}
           target="_blank"
           rel="noopener noreferrer"
-          className={`text-[11px] underline block mt-0.5 ${isMine ? "text-white/80" : "text-slate-400"}`}
+          className={`text-[11px] underline inline-flex items-center gap-1 mt-0.5 ${isMine ? "text-white/80" : "text-slate-400"}`}
         >
-          ⬇ Download
+          <Icon name="download" size={12} /> Download
         </a>
 
         {lightboxOpen && (
@@ -118,9 +119,9 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="absolute bottom-4 text-white/80 text-xs underline"
+              className="absolute bottom-4 text-white/80 text-xs underline inline-flex items-center gap-1"
             >
-              ⬇ Download
+              <Icon name="download" size={12} /> Download
             </a>
           </div>
         )}
@@ -134,9 +135,9 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`text-xs underline block ${isMine ? "" : "text-brand"}`}
+        className={`text-xs underline inline-flex items-center gap-1 ${isMine ? "" : "text-brand"}`}
       >
-        📎 {file.file_name}
+        <Icon name="paperclip" size={12} /> {file.file_name}
       </a>
       <a
         href={url}
@@ -145,7 +146,7 @@ export default function MessageAttachment({ attachmentId, file: initialFile, isM
         rel="noopener noreferrer"
         className={`text-[11px] underline ${isMine ? "text-white/80" : "text-slate-400"}`}
       >
-        ⬇ Download
+        <Icon name="download" size={12} /> Download
       </a>
     </div>
   );

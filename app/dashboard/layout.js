@@ -650,7 +650,8 @@ function DashboardLayoutInner({ children }) {
         {checked && showEnableAlerts && (
           <div className="bg-brand/5 border-b border-brand/20 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-xs text-slate-600">
-              🔔 Turn on alerts to get a sound and a notification when something needs you -- even
+              <Icon name="bell" size={14} className="inline mr-1 -mt-0.5" />
+              Turn on alerts to get a sound and a notification when something needs you -- even
               when Agency OS is closed.
               {alertsError && <span className="block text-red-600 mt-1">{alertsError}</span>}
             </p>

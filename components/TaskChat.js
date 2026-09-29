@@ -8,6 +8,7 @@ import MessageAttachment, { attachmentUrl } from "@/components/MessageAttachment
 import EmojiPicker from "@/components/EmojiPicker";
 import MessageActions from "@/components/MessageActions";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import Icon from "@/components/Icon";
 
 const MAX_FILE_SIZE_MB = 100;
 
@@ -293,7 +294,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                         : "text-slate-400"
                     }`}
                   >
-                    {isInternal ? "🟠 Internal Note" : "🔵 Client Message"}
+                    {isInternal ? "Internal Note" : "Client Message"}
                   </p>
                 )}
                 {!isInternal && AGENCY_ROLES.includes(senderRoleMap[m.sender_id]) && (
@@ -302,7 +303,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                       isMine ? "text-white/90" : "text-purple-600"
                     }`}
                   >
-                    👑 Owner
+                    <Icon name="crown" size={11} /> Owner
                   </p>
                 )}
                 {m.reply_to_id && !m.deleted_at && (
@@ -388,7 +389,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                 checked={visibility === "client"}
                 onChange={() => setVisibility("client")}
               />
-              🔵 Client Message
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 align-middle mr-1" /> Client Message
             </label>
             <label className="flex items-center gap-1">
               <input
@@ -396,7 +397,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
                 checked={visibility === "internal"}
                 onChange={() => setVisibility("internal")}
               />
-              🟠 Internal Note
+              <span className="inline-block w-2 h-2 rounded-full bg-orange-500 align-middle mr-1" /> Internal Note
             </label>
           </div>
         )}
@@ -412,7 +413,7 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
 
         {file && (
           <p className="text-xs text-slate-500 mb-2">
-            📎 {file.name}{" "}
+            <Icon name="paperclip" size={12} /> {file.name}{" "}
             <button type="button" onClick={() => setFile(null)} className="text-red-500 ml-1">
               remove
             </button>
@@ -452,10 +453,10 @@ export default function TaskChat({ taskId, currentUser, isStaff }) {
             className="text-lg px-0.5 sm:px-1 flex-shrink-0"
             title="Emoji"
           >
-            😀
+            <Icon name="smile" size={18} />
           </button>
           <label className="text-lg px-0.5 sm:px-1 cursor-pointer flex-shrink-0" title="Attach file">
-            📎
+            <Icon name="paperclip" size={18} />
             <input
               type="file"
               className="hidden"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ReactionPicker } from "@/components/MessageReactions";
+import Icon from "@/components/Icon";
 
 // Messenger-style action row that appears beside a message on hover:
 // a reaction picker plus a ⋮ menu holding Reply / Download / Delete.
@@ -59,9 +60,9 @@ export default function MessageActions({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                 >
-                  ⬇ Download
+                  <Icon name="download" size={12} /> Download
                 </a>
               )}
 
@@ -73,7 +74,7 @@ export default function MessageActions({
                   }}
                   className="w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                 >
-                  🗑 Delete
+                  <Icon name="trash" size={12} /> Delete
                 </button>
               )}
             </div>

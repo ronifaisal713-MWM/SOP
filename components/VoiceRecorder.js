@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Icon from "@/components/Icon";
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -133,7 +134,7 @@ export default function VoiceRecorder({ onRecorded, disabled }) {
         className="text-lg px-0.5 sm:px-1 flex-shrink-0 disabled:opacity-40"
         title="Record a voice message"
       >
-        🎤
+        <Icon name="mic" size={18} />
       </button>
       {error && <span className="text-[10px] text-red-600">{error}</span>}
     </>
