@@ -95,7 +95,12 @@ export default function TasksKanbanPage() {
         .eq("user_id", user.id)
         .eq("is_read", false)
         .ilike("link", "/dashboard/tasks%")
+        // Chat notifications are titled "New message", "New internal
+        // note", "New personal message" and "New private message" --
+        // matching on "message" alone let internal notes through, so
+        // their card badges were wiped the instant the board loaded.
         .not("title", "ilike", "%message%")
+        .not("title", "ilike", "%note%")
         .not("title", "ilike", "%mentioned%")
         .then(() => {});
     }
