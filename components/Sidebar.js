@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Icon from "@/components/Icon";
 
 const ROLE_LABEL = {
   super_admin: "Owner",
@@ -147,7 +148,7 @@ export default function Sidebar({
                   }`}
                 >
                   <span className="text-base leading-none flex-shrink-0 relative">
-                    {item.icon}
+                    <Icon name={item.icon} size={18} />
                     {badge > 0 && collapsed && (
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
                     )}
@@ -172,7 +173,7 @@ export default function Sidebar({
             title={collapsed ? "Platform View" : undefined}
             className="flex items-center gap-2 text-xs text-purple-300 hover:text-purple-200 mb-3"
           >
-            <span>🔁</span>
+            <Icon name="platform" size={18} />
             {!collapsed && <span>Platform View</span>}
           </Link>
         )}
@@ -183,7 +184,7 @@ export default function Sidebar({
             title={collapsed ? "Agency View" : undefined}
             className="flex items-center gap-2 text-xs text-purple-300 hover:text-purple-200 mb-3"
           >
-            <span>🏢</span>
+            <Icon name="building" size={18} />
             {!collapsed && <span>Agency View</span>}
           </Link>
         )}
@@ -204,7 +205,7 @@ export default function Sidebar({
 
         <div className={`flex gap-3 mt-2 text-xs ${collapsed ? "flex-col items-center" : ""}`}>
           <Link href="/dashboard/profile" className="text-slate-400 hover:text-white" title="Profile">
-            {collapsed ? "👤" : "Profile"}
+            {collapsed ? <Icon name="profile" size={16} /> : "Profile"}
           </Link>
           <button onClick={onSignOut} className="text-slate-400 hover:text-white" title="Sign Out">
             {collapsed ? "🚪" : "Sign Out"}

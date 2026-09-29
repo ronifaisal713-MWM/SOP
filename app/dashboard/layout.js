@@ -9,6 +9,7 @@ import ChatWidget from "@/components/ChatWidget";
 import ClientChat from "@/components/ClientChat";
 import StaffChat from "@/components/StaffChat";
 import Sidebar from "@/components/Sidebar";
+import Icon from "@/components/Icon";
 import { playNotificationSound, showBrowserNotification } from "@/lib/notificationAlerts";
 import { registerServiceWorker, subscribeToPush, isPushSubscribed } from "@/lib/pushNotifications";
 import { timeAgo } from "@/lib/timeAgo";
@@ -19,8 +20,8 @@ const SIDEBAR_BY_CATEGORY = {
     {
       section: null,
       items: [
-        { href: "/dashboard/platform", label: "Dashboard", icon: "🏠" },
-        { href: "/dashboard/platform/email-requests", label: "Email Requests", icon: "✉️" },
+        { href: "/dashboard/platform", label: "Dashboard", icon: "dashboard" },
+        { href: "/dashboard/platform/email-requests", label: "Email Requests", icon: "mail" },
       ],
     },
   ],
@@ -28,21 +29,21 @@ const SIDEBAR_BY_CATEGORY = {
     {
       section: "Main",
       items: [
-        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-        { href: "/dashboard/tasks", label: "Task Board", icon: "📋" },
-        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
-        { href: "/dashboard/reports", label: "Reports", icon: "📊" },
+        { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/dashboard/tasks", label: "Task Board", icon: "board" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "requirements" },
+        { href: "/dashboard/reports", label: "Reports", icon: "reports" },
       ],
     },
     {
       section: "Management",
       items: [
-        { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
-        { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
-        { href: "/dashboard/leave/manage", label: "Leave", icon: "🌴" },
-        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
-        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
-        { href: "/dashboard/admin/email-requests", label: "Email Requests", icon: "✉️" },
+        { href: "/dashboard/admin/clients", label: "Clients", icon: "clients" },
+        { href: "/dashboard/admin/team", label: "Team", icon: "team" },
+        { href: "/dashboard/leave/manage", label: "Leave", icon: "leave" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "calendar" },
+        { href: "/dashboard/billing", label: "Billing", icon: "billing" },
+        { href: "/dashboard/admin/email-requests", label: "Email Requests", icon: "mail" },
       ],
     },
   ],
@@ -50,20 +51,20 @@ const SIDEBAR_BY_CATEGORY = {
     {
       section: "Main",
       items: [
-        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-        { href: "/dashboard/tasks", label: "Task Board", icon: "📋" },
-        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
-        { href: "/dashboard/reports", label: "Reports", icon: "📊" },
+        { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/dashboard/tasks", label: "Task Board", icon: "board" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "requirements" },
+        { href: "/dashboard/reports", label: "Reports", icon: "reports" },
       ],
     },
     {
       section: "Clients",
       items: [
-        { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
-        { href: "/dashboard/admin/team", label: "Team", icon: "🧑‍💼" },
-        { href: "/dashboard/leave", label: "My Leave", icon: "🌴" },
-        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
-        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
+        { href: "/dashboard/admin/clients", label: "Clients", icon: "clients" },
+        { href: "/dashboard/admin/team", label: "Team", icon: "team" },
+        { href: "/dashboard/leave", label: "My Leave", icon: "leave" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "calendar" },
+        { href: "/dashboard/billing", label: "Billing", icon: "billing" },
       ],
     },
   ],
@@ -71,12 +72,12 @@ const SIDEBAR_BY_CATEGORY = {
     {
       section: null,
       items: [
-        { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-        { href: "/dashboard/my-tasks", label: "My Tasks", icon: "📋" },
-        { href: "/dashboard/requirements", label: "Requirements", icon: "📝" },
-        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "📅" },
-        { href: "/dashboard/billing", label: "Billing", icon: "💵" },
-        { href: "/dashboard/team", label: "Your Team", icon: "👥" },
+        { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+        { href: "/dashboard/my-tasks", label: "My Tasks", icon: "tasks" },
+        { href: "/dashboard/requirements", label: "Requirements", icon: "requirements" },
+        { href: "/dashboard/monthly-reports", label: "Monthly Reports", icon: "calendar" },
+        { href: "/dashboard/billing", label: "Billing", icon: "billing" },
+        { href: "/dashboard/team", label: "Your Team", icon: "team" },
       ],
     },
   ],
@@ -124,26 +125,26 @@ const NAV_BY_CATEGORY = {
 // list doesn't fit a phone screen the way it does a desktop header.
 const MOBILE_PRIMARY_BY_CATEGORY = {
   platform: [
-    { href: "/dashboard/platform", label: "Home", icon: "🏠" },
-    { href: "/dashboard/platform/email-requests", label: "Requests", icon: "✉️" },
+    { href: "/dashboard/platform", label: "Home", icon: "dashboard" },
+    { href: "/dashboard/platform/email-requests", label: "Requests", icon: "mail" },
   ],
   agency: [
-    { href: "/dashboard", label: "Home", icon: "🏠" },
-    { href: "/dashboard/tasks", label: "Tasks", icon: "📋" },
-    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
-    { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+    { href: "/dashboard", label: "Home", icon: "dashboard" },
+    { href: "/dashboard/tasks", label: "Tasks", icon: "board" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "requirements" },
+    { href: "/dashboard/admin/clients", label: "Clients", icon: "clients" },
   ],
   staff: [
-    { href: "/dashboard", label: "Home", icon: "🏠" },
-    { href: "/dashboard/tasks", label: "Tasks", icon: "📋" },
-    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
-    { href: "/dashboard/admin/clients", label: "Clients", icon: "👥" },
+    { href: "/dashboard", label: "Home", icon: "dashboard" },
+    { href: "/dashboard/tasks", label: "Tasks", icon: "board" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "requirements" },
+    { href: "/dashboard/admin/clients", label: "Clients", icon: "clients" },
   ],
   client: [
-    { href: "/dashboard", label: "Home", icon: "🏠" },
-    { href: "/dashboard/my-tasks", label: "Tasks", icon: "📋" },
-    { href: "/dashboard/requirements", label: "Reqs", icon: "📝" },
-    { href: "/dashboard/monthly-reports", label: "Reports", icon: "📊" },
+    { href: "/dashboard", label: "Home", icon: "dashboard" },
+    { href: "/dashboard/my-tasks", label: "Tasks", icon: "board" },
+    { href: "/dashboard/requirements", label: "Reqs", icon: "requirements" },
+    { href: "/dashboard/monthly-reports", label: "Reports", icon: "reports" },
   ],
 };
 
@@ -539,8 +540,8 @@ function DashboardLayoutInner({ children }) {
 
           {checked && (
             <div className="flex items-center gap-4 relative">
-              <button onClick={handleOpenNotifications} className="relative text-lg" title="Notifications">
-                🔔
+              <button onClick={handleOpenNotifications} className="relative text-slate-600 hover:text-brand transition" title="Notifications">
+                <Icon name="bell" size={20} />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                     {unreadCount > 9 ? "9+" : unreadCount}
@@ -622,7 +623,8 @@ function DashboardLayoutInner({ children }) {
                   className="text-sm text-purple-600 hover:underline hidden sm:inline md:hidden"
                   title="Switch to your Platform Owner dashboard"
                 >
-                  🔁 Platform View
+                  <Icon name="platform" size={16} className="inline mr-1 -mt-0.5" />
+                  Platform View
                 </Link>
               )}
 
@@ -631,7 +633,8 @@ function DashboardLayoutInner({ children }) {
                 className="text-sm text-slate-500 hover:text-brand transition md:hidden"
                 title="Profile"
               >
-                👤 <span className="hidden sm:inline">Profile</span>
+                <Icon name="profile" size={18} />
+                <span className="hidden sm:inline ml-1">Profile</span>
               </Link>
 
               <button
@@ -778,8 +781,8 @@ function DashboardLayoutInner({ children }) {
                   active ? "text-brand font-medium" : "text-slate-500"
                 }`}
               >
-                <span className="text-lg leading-none relative">
-                  {item.icon}
+                <span className="leading-none relative">
+                  <Icon name={item.icon} size={20} />
                   {badge > 0 && (
                     <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[8px] rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
                       {badge > 9 ? "9+" : badge}
@@ -832,7 +835,8 @@ function DashboardLayoutInner({ children }) {
                   href="/dashboard/platform"
                   className="block px-3 py-3 text-sm text-purple-600 rounded-md hover:bg-slate-50"
                 >
-                  🔁 Platform View
+                  <Icon name="platform" size={16} className="inline mr-1 -mt-0.5" />
+                  Platform View
                 </Link>
               )}
               <button
