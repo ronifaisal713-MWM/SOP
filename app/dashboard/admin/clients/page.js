@@ -16,6 +16,36 @@ export default function ClientsListPage() {
   const [error, setError] = useState("");
   const [chatClient, setChatClient] = useState(null);
   const [chatContacts, setChatContacts] = useState([]);
+  const [actionError, setActionError] = useState("");
+
+  async function manageClient(clientId, action) {
+    if (
+      action === "remove" &&
+      !confirm(
+        "Remove this client?\n\nThey lose access immediately, but nothing is deleted for 7 days -- you can restore them with all their work until then."
+      )
+    ) {
+      return;
+    }
+
+    setActionError("");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/manage-account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session?.access_token}`,
+      },
+      body: JSON.stringify({ action, kind: "client", id: clientId }),
+    });
+    const json = await res.json();
+
+    if (!res.ok) {
+      setActionError(json.error || "That didn't work.");
+      return;
+    }
+    load();
+  }
 
   // ClientChat needs the client's contacts to offer the Personal tab
   // (Owner <-> one specific contact) -- fetch them when a chat opens
@@ -30,17 +60,20 @@ export default function ClientsListPage() {
     setChatContacts(data || []);
   }
 
-  useEffect(() => {
-    if (!checked || !allowed) return;
-    supabase
+  async function load() {
+    const { data, error: fetchError } = await supabase
       .from("clients")
       .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data, error: fetchError }) => {
-        if (fetchError) setError(fetchError.message);
-        setClients(data || []);
-        setLoading(false);
-      });
+      .order("created_at", { ascending: false });
+    if (fetchError) setError(fetchError.message);
+    setClients(data || []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (!checked || !allowed) return;
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, allowed]);
 
   if (!checked) {
@@ -116,6 +149,22 @@ export default function ClientsListPage() {
                         Assign Team
                       </a>
                     )}
+                    {isAgency &&
+                      (c.deletion_requested_at ? (
+                        <button
+                          onClick={() => manageClient(c.id, "restore")}
+                          className="text-green-600 text-xs hover:underline"
+                        >
+                          Restore
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => manageClient(c.id, "remove")}
+                          className="text-red-500 text-xs hover:underline"
+                        >
+                          Remove
+                        </button>
+                      ))}
                   </div>
                 </div>
               ))}
@@ -142,9 +191,18 @@ export default function ClientsListPage() {
                       <td className="px-4 py-3 text-slate-500">{c.contact_person || "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{c.email || "-"}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          {c.status}
-                        </span>
+                        {c.deletion_requested_at ? (
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700"
+                            title="Deleted permanently 7 days after removal unless restored"
+                          >
+                            removing
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            {c.status}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <button
@@ -164,12 +222,29 @@ export default function ClientsListPage() {
                       </td>
                       {isAgency && (
                         <td className="px-4 py-3">
-                          <a
-                            href={`/dashboard/admin/clients/${c.id}/assign`}
-                            className="text-brand text-xs hover:underline"
-                          >
-                            Assign Team
-                          </a>
+                          <div className="flex items-center gap-3">
+                            <a
+                              href={`/dashboard/admin/clients/${c.id}/assign`}
+                              className="text-brand text-xs hover:underline"
+                            >
+                              Assign Team
+                            </a>
+                            {c.deletion_requested_at ? (
+                              <button
+                                onClick={() => manageClient(c.id, "restore")}
+                                className="text-green-600 text-xs hover:underline"
+                              >
+                                Restore
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => manageClient(c.id, "remove")}
+                                className="text-red-500 text-xs hover:underline"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>

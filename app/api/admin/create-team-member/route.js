@@ -52,6 +52,49 @@ export async function POST(request) {
       );
     }
 
+    // Re-adding someone who was removed in the last 7 days restores
+    // their account rather than creating a second one. Their id is
+    // unchanged, so every task, message and piece of history they had
+    // comes back attached -- and it avoids the "email already
+    // registered" error that would otherwise be the only outcome.
+    const { data: authList } = await supabaseAdmin.auth.admin.listUsers();
+    const existingAuth = (authList?.users || []).find(
+      (u) => (u.email || "").toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingAuth) {
+      const { data: pending } = await supabaseAdmin
+        .from("profiles")
+        .select("id, organization_id, deletion_requested_at")
+        .eq("id", existingAuth.id)
+        .maybeSingle();
+
+      if (pending?.deletion_requested_at && pending.organization_id === callerProfile.organization_id) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            deletion_requested_at: null,
+            deleted_by: null,
+            full_name: fullName,
+            role,
+          })
+          .eq("id", existingAuth.id);
+
+        await supabaseAdmin.auth.admin.updateUserById(existingAuth.id, { ban_duration: "none" });
+
+        return NextResponse.json({
+          ok: true,
+          restored: true,
+          message: "That account was pending deletion — it has been restored with its history intact.",
+        });
+      }
+
+      return NextResponse.json(
+        { error: "An account with that email already exists." },
+        { status: 400 }
+      );
+    }
+
     let newUser;
     if (mode === "invite") {
       const origin = new URL(request.url).origin;

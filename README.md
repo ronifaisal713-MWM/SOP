@@ -82,7 +82,8 @@ Billing.
    `supabase/migration_050_partial_day_leave.sql`, then
    `supabase/migration_051_email_routing.sql`, then
    `supabase/migration_052_email_cron.sql`, then
-   `supabase/migration_053_fix_leave_entitlement.sql` (push also needs the
+   `supabase/migration_053_fix_leave_entitlement.sql`, then
+   `supabase/migration_054_agency_remove_accounts.sql` (push also needs the
    Edge Function deployed and VAPID keys set -- see "Push
    notifications" below).
 5. Run the dev server:

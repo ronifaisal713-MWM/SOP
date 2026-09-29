@@ -26,12 +26,13 @@ function TeamListInner() {
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState(null);
   const [dmUser, setDmUser] = useState(null);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     if (!checked || !allowed) return;
     supabase
       .from("profiles")
-      .select("id, full_name, role")
+      .select("id, full_name, role, deletion_requested_at")
       .in("role", ALL_STAFF_ROLES)
       .then(({ data }) => {
         const rows = data || [];
@@ -54,6 +55,35 @@ function TeamListInner() {
       .single()
       .then(({ data }) => setOrganizationId(data?.organization_id || null));
   }, [checked, allowed, user, openDmId]);
+
+  async function manageAccount(memberId, action) {
+    if (
+      action === "remove" &&
+      !confirm(
+        "Remove this team member?\n\nThey lose access immediately, but nothing is deleted for 7 days -- you can restore them with all their history until then."
+      )
+    ) {
+      return;
+    }
+
+    setActionError("");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/manage-account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session?.access_token}`,
+      },
+      body: JSON.stringify({ action, kind: "staff", id: memberId }),
+    });
+    const json = await res.json();
+
+    if (!res.ok) {
+      setActionError(json.error || "That didn't work.");
+      return;
+    }
+    load();
+  }
 
   if (!checked) {
     return <main className="min-h-screen flex items-center justify-center text-slate-400">Loading...</main>;
@@ -109,12 +139,20 @@ function TeamListInner() {
                 <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
                   {initials(m.full_name)}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-800 text-sm">
                     {m.full_name || "Unnamed"}
                     {m.id === user?.id && <span className="text-slate-400"> (you)</span>}
+                    {m.deletion_requested_at && (
+                      <span className="text-xs text-red-500 font-normal"> · being removed</span>
+                    )}
                   </p>
                   <p className="text-xs text-slate-400">{ROLE_LABEL[m.role] || m.role}</p>
+                  {m.deletion_requested_at && (
+                    <p className="text-[11px] text-red-500 mt-0.5">
+                      Deleted permanently 7 days after {new Date(m.deletion_requested_at).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
                 {m.id !== user?.id && (isAgency || AGENCY_ROLES.includes(m.role)) && (
                   <button
@@ -123,6 +161,23 @@ function TeamListInner() {
                   >
                     <Icon name="chat" size={13} /> Message
                   </button>
+                )}
+                {isAgency && m.id !== user?.id && m.role !== "super_admin" && (
+                  m.deletion_requested_at ? (
+                    <button
+                      onClick={() => manageAccount(m.id, "restore")}
+                      className="text-xs text-green-600 hover:underline flex-shrink-0"
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => manageAccount(m.id, "remove")}
+                      className="text-xs text-red-500 hover:underline flex-shrink-0"
+                    >
+                      Remove
+                    </button>
+                  )
                 )}
               </div>
             ))}
